@@ -3,6 +3,7 @@
 
 import { useState } from "react";
 import Link from "next/link";
+import confetti from "canvas-confetti";
 import { useWishes } from "../hooks/useWishes";
 
 type Option = {
@@ -22,9 +23,6 @@ const OPTIONS: Option[] = [
 
 const CORRECT_OPTION_ID = 1;
 
-// Wishes iniciales del día
-const INITIAL_WISHES = 2; // solo referencia visual, el valor real viene del hook
-
 export default function PreguntaPage() {
   const { wishes, setWishes, isReady } = useWishes();
   const [attempts, setAttempts] = useState(0);
@@ -37,65 +35,56 @@ export default function PreguntaPage() {
     // Si ya respondió bien, no hacemos nada
     if (hasAnsweredCorrectly) return;
 
-    setSelectedOption(option.id);
-
-    // PRIMER INTENTO: no gasta wishes
-    if (attempts === 0) {
-      setAttempts(1);
-
-      if (option.id === CORRECT_OPTION_ID) {
-        setIsCorrect(true);
-        setHasAnsweredCorrectly(true);
-        setFeedback(
-          "¡Respuesta correcta! Has sumado constancia en la carrera de hoy."
-        );
-      } else {
-        setIsCorrect(false);
-        setFeedback(
-          "No es correcta. Puedes volver a intentarlo gastando 1 wish."
-        );
-      }
-      if (!isReady) {
-        return (
-          <main className="r4w-question-page">
-            <section className="r4w-question-layout">
-              <div className="r4w-question-card-standalone">
-                <div className="r4w-question-status">Cargando wishes...</div>
-              </div>
-            </section>
-          </main>
-        );
-      }
-      return;
-    }
-
-    // A PARTIR DEL SEGUNDO INTENTO: gasta 1 wish por intento
+    // Si no hay wishes, no permitimos responder
     if (wishes <= 0) {
+      setSelectedOption(option.id);
       setIsCorrect(false);
       setFeedback(
-        "Te has quedado sin wishes para esta pregunta. En la versión completa podrás comprar más."
+        "Te has quedado sin wishes para responder esta pregunta. Recarga wishes para seguir jugando."
       );
       return;
     }
 
+    setSelectedOption(option.id);
     setAttempts((a) => a + 1);
-    setWishes((w) => w - 1);
+    setWishes((w) => w - 1); // 🔥 siempre consume 1 wish, aciertes o falles
 
     if (option.id === CORRECT_OPTION_ID) {
       setIsCorrect(true);
       setHasAnsweredCorrectly(true);
+
+      // 🎉 Confeti al acertar
+      confetti({
+        particleCount: 160,
+        spread: 70,
+        origin: { y: 0.6 },
+        colors: ["#FF7A1A", "#ffffff", "#ffc065"],
+      });
+
+      // Mensaje temporal de puestos adelantados (simulado)
+      const puestosAdelantados = Math.floor(Math.random() * 8) + 3; // entre 3 y 10
       setFeedback(
-        "¡Correcto! Has usado un wish extra, pero sigues en la carrera."
+        `¡Respuesta correcta! 🎉 Has adelantado ${puestosAdelantados} puestos.`
       );
     } else {
       setIsCorrect(false);
       setFeedback(
-        "Sigue sin ser correcta. Mientras te queden wishes, puedes volver a intentarlo."
+        "No es correcta. Cada respuesta consume 1 wish; si te quedan, puedes volver a intentarlo."
       );
     }
   };
 
-  const canRetry = !hasAnsweredCorrectly && wishes > 0;
+  if (!isReady) {
+    return (
+      <main className="r4w-question-page">
+        <section className="r4w-question-layout">
+          <div className="r4w-question-card-standalone">
+            <div className="r4w-question-status">Cargando wishes...</div>
+          </div>
+        </section>
+      </main>
+    );
+  }
 
   return (
     <main className="r4w-question-page">
@@ -108,14 +97,12 @@ export default function PreguntaPage() {
               Suma constancia respondiendo a la pregunta de hoy
             </h1>
             <p className="r4w-question-subtitle">
-              Recuerda: el primer intento del día no gasta wishes. Cada intento
-              extra consumirá 1 wish.
+              Cada vez que respondes consumes 1 wish, aciertes o falles. Cuando
+              te quedes sin wishes, tendrás que recargar.
             </p>
           </div>
 
-          <div className="r4w-panel-chip">
-            Wishes disponibles: {wishes}
-          </div>
+          <div className="r4w-panel-chip">Wishes disponibles: {wishes}</div>
         </header>
 
         {/* Card de pregunta */}
@@ -147,10 +134,7 @@ export default function PreguntaPage() {
                   type="button"
                   className={classes}
                   onClick={() => handleOptionClick(opt)}
-                  disabled={
-                    hasAnsweredCorrectly ||
-                    (!canRetry && attempts > 0 && opt.id !== selectedOption)
-                  }
+                  disabled={hasAnsweredCorrectly || wishes <= 0}
                 >
                   <span className="r4w-option-letter">{opt.label}</span>
                   <span className="r4w-option-text">{opt.text}</span>
@@ -184,8 +168,8 @@ export default function PreguntaPage() {
               }}
             >
               <span>
-                Te has quedado sin wishes para esta pregunta. En la versión demo
-                puedes recargarlos manualmente.
+                Te has quedado sin wishes para esta pregunta. En la demo puedes
+                recargarlos manualmente.
               </span>
               <Link href="/wishes" className="r4w-secondary-btn">
                 Recargar wishes
@@ -196,9 +180,10 @@ export default function PreguntaPage() {
 
           {/* Info wishes */}
           <div className="r4w-question-timer" style={{ marginTop: 10 }}>
-            Primer intento del día: <strong>0 wishes</strong>. <br />
-            Cada intento extra: <strong>−1 wish</strong> (cuando haya sistema de
-            compra podrás recargar).
+            Cada respuesta consume <strong>1 wish</strong>, aciertes o falles.{" "}
+            <br />
+            Si te quedas sin wishes, tendrás que recargar para seguir
+            respondiendo.
           </div>
 
           {/* Navegación */}

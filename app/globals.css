@@ -1843,6 +1843,20 @@ input:focus {
   }
 }
 
+.r4w-topbar-wishes-pill {
+  padding: 4px 8px;
+  border-radius: 999px;
+  border: 1px solid rgba(255, 122, 26, 0.7);
+  font-size: 11px;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.r4w-topbar-wishes-pill span {
+  font-weight: 600;
+}
+
 /* --- HOME / LANDING MVP --- */
 
 .r4w-home {

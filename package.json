@@ -10,6 +10,7 @@
     "deploy": "git add . && git commit -m \"auto: update\" || echo \"Sin cambios para commitear\" && git push origin main"
   },
   "dependencies": {
+    "canvas-confetti": "^1.9.4",
     "next": "16.0.4",
     "react": "19.2.0",
     "react-dom": "19.2.0"
