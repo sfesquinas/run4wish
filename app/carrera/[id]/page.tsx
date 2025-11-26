@@ -50,7 +50,7 @@ export default function CarreraDetallePage({ params }: RacePageProps) {
 
   const todayIndex = Math.min(race.daysPlayed, race.daysTotal - 1);
 
-  const questionAvailable = false; // más adelante se conectará a la lógica real
+  const questionAvailable = true; // más adelante se conectará a la lógica real
 
   return (
     <main className="r4w-race-detail-page">
@@ -136,9 +136,9 @@ export default function CarreraDetallePage({ params }: RacePageProps) {
             </div>
 
             <div className="r4w-question-actions">
-              <button
+              <Link
+                href="/pregunta"
                 className="r4w-primary-btn"
-                disabled={!questionAvailable}
                 style={{ opacity: questionAvailable ? 1 : 0.6 }}
               >
                 <span>
@@ -147,7 +147,7 @@ export default function CarreraDetallePage({ params }: RacePageProps) {
                     : "Esperando apertura"}
                 </span>
                 <span>➜</span>
-              </button>
+              </Link>
 
               <Link href="/panel" className="r4w-secondary-btn">
                 Ver mi panel
@@ -177,8 +177,8 @@ export default function CarreraDetallePage({ params }: RacePageProps) {
                       item.delta > 0
                         ? "positive"
                         : item.delta < 0
-                        ? "negative"
-                        : "",
+                          ? "negative"
+                          : "",
                     ]
                       .filter(Boolean)
                       .join(" ")}
