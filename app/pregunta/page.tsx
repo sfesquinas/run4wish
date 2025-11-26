@@ -26,7 +26,7 @@ const CORRECT_OPTION_ID = 1;
 
 export default function PreguntaPage() {
   const { wishes, setWishes, isReady } = useWishes();
-  const { markAnsweredToday } = useRaceProgress("r7", 7);
+  const { answeredToday, markAnsweredToday } = useRaceProgress("r7", 7);
   const [attempts, setAttempts] = useState(0);
   const [selectedOption, setSelectedOption] = useState<number | null>(null);
   const [feedback, setFeedback] = useState<string | null>(null);
@@ -103,6 +103,33 @@ export default function PreguntaPage() {
         <section className="r4w-question-layout">
           <div className="r4w-question-card-standalone">
             <div className="r4w-question-status">Cargando wishes...</div>
+          </div>
+        </section>
+      </main>
+    );
+  }
+
+  // 🔒 Si ya has respondido la pregunta de hoy, mostramos mensaje y no dejamos jugar
+  if (answeredToday) {
+    return (
+      <main className="r4w-question-page">
+        <section className="r4w-question-layout">
+          <div className="r4w-question-card-standalone">
+            <div className="r4w-question-status">
+              Pregunta de hoy ya respondida
+            </div>
+            <h1 className="r4w-question-title" style={{ marginBottom: 8 }}>
+              Tu constancia ya está sumada 💪
+            </h1>
+            <p className="r4w-question-subtitle">
+              Ya has respondido la pregunta de hoy en esta carrera. Vuelve
+              mañana para seguir adelantando puestos.
+            </p>
+
+            <a href="/carrera/r7" className="r4w-primary-btn" style={{ marginTop: 16 }}>
+              Volver a mi carrera
+              <span>🏁</span>
+            </a>
           </div>
         </section>
       </main>
