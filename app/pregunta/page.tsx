@@ -5,6 +5,7 @@ import { useState } from "react";
 import Link from "next/link";
 import confetti from "canvas-confetti";
 import { useWishes } from "../hooks/useWishes";
+import { useRaceProgress } from "../hooks/useRaceProgress";
 
 type Option = {
   id: number;
@@ -25,6 +26,7 @@ const CORRECT_OPTION_ID = 1;
 
 export default function PreguntaPage() {
   const { wishes, setWishes, isReady } = useWishes();
+  const { markAnsweredToday } = useRaceProgress("r7", 7);
   const [attempts, setAttempts] = useState(0);
   const [selectedOption, setSelectedOption] = useState<number | null>(null);
   const [feedback, setFeedback] = useState<string | null>(null);
@@ -77,6 +79,9 @@ export default function PreguntaPage() {
           })
         );
       }
+
+      // Marcamos que hoy ya has respondido en esta carrera
+      markAnsweredToday();
 
       setCelebration({ positions: puestosAdelantados });
 

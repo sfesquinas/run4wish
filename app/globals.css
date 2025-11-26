@@ -1684,6 +1684,26 @@ input:focus {
   margin-bottom: 18px;
 }
 
+.r4w-profile-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 6px 0;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.03);
+  font-size: 13px;
+}
+
+.r4w-profile-label {
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--r4w-text-muted);
+}
+
+.r4w-profile-value {
+  font-size: 13px;
+}
+
 /* formulario básico */
 
 .r4w-profile-form {

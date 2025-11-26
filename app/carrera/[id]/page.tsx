@@ -1,11 +1,14 @@
 // app/carrera/[id]/page.tsx
+"use client";
+
 import Link from "next/link";
+import { useParams } from "next/navigation";
+import { useRaceProgress } from "../../hooks/useRaceProgress";
 
 type Race = {
   id: string;
   name: string;
   daysTotal: number;
-  daysPlayed: number;
   position: number;
   totalParticipants: number;
   window: string;
@@ -23,7 +26,6 @@ const races: Record<string, Race> = {
     id: "r7",
     name: "Carrera 7 días · MVP",
     daysTotal: 7,
-    daysPlayed: 3,
     position: 12,
     totalParticipants: 100,
     window: "de 09:00 a 00:00 (hora local)",
@@ -38,21 +40,25 @@ const rankingTop5: RankingItem[] = [
   { position: 20, name: "SlowButSure", avatarEmoji: "🐢", delta: -3 },
 ];
 
-interface RacePageProps {
-  params: Promise<{ id: string }>;
-}
+export default function CarreraDetallePage() {
+  // 🔹 Obtenemos el id de la URL: /carrera/r7
+  const params = useParams<{ id: string }>();
+  const raceId = params?.id ?? "r7";
 
-export default async function CarreraDetallePage({ params }: RacePageProps) {
-  const { id } = await params;
+  // 🔹 Si no existe, usamos r7 como fallback
+  const race = races[raceId] ?? races["r7"];
 
-  // Por ahora, si no existe el id, usamos r7 como fallback
-  const race = races[id] ?? races["r7"];
+  // 🔹 Progreso real de la carrera (hook nuevo)
+  const { daysPlayed, currentDayIndex, answeredToday } = useRaceProgress(
+    race.id,
+    race.daysTotal
+  );
 
-  const progress = Math.round((race.daysPlayed / race.daysTotal) * 100);
+  const progress = Math.round((daysPlayed / race.daysTotal) * 100);
+  const todayIndex = currentDayIndex;
 
-  const todayIndex = Math.min(race.daysPlayed, race.daysTotal - 1);
-
-  const questionAvailable = true; // más adelante se conectará a la lógica real
+  // Por ahora, si ya has respondido hoy, bloqueamos la pregunta
+  const questionAvailable = !answeredToday;
 
   return (
     <main className="r4w-race-detail-page">
@@ -77,7 +83,7 @@ export default async function CarreraDetallePage({ params }: RacePageProps) {
               1 pregunta al día
             </span>
             <span>
-              Días jugados: {race.daysPlayed}/{race.daysTotal}
+              Días jugados: {daysPlayed}/{race.daysTotal}
             </span>
             <span>
               Posición actual: #{race.position} / {race.totalParticipants}
@@ -99,7 +105,7 @@ export default async function CarreraDetallePage({ params }: RacePageProps) {
 
             <div className="r4w-race-detail-timeline">
               {Array.from({ length: race.daysTotal }).map((_, idx) => {
-                const isDone = idx < race.daysPlayed;
+                const isDone = idx < daysPlayed;
                 const isToday = idx === todayIndex;
 
                 return (
@@ -124,17 +130,17 @@ export default async function CarreraDetallePage({ params }: RacePageProps) {
           {/* Pregunta del día */}
           <div className="r4w-question-card">
             <div className="r4w-question-status">
-              Pregunta del día · ventana {race.window}
+              Día {daysPlayed} de {race.daysTotal} · ventana {race.window}
             </div>
             <div className="r4w-question-title">
               {questionAvailable
                 ? "La pregunta de hoy ya está disponible. ¿Preparado para sumar constancia?"
-                : "La pregunta de hoy aún no está activa. En cuanto se abra, podrás responder desde aquí."}
+                : "Ya has respondido la pregunta de hoy. Tu constancia suma, vuelve mañana para seguir avanzando."}
             </div>
             <div className="r4w-question-timer">
               {questionAvailable
-                ? "Tiempo restante: 01:23:45"
-                : "Recuerda: quien responde antes, adelanta posiciones frente al resto."}
+                ? "Recuerda: cuanto antes respondas, más puestos puedes adelantar."
+                : "La carrera sigue en marcha. Mantén la racha respondiendo cada día."}
             </div>
 
             <div className="r4w-question-actions">
@@ -146,7 +152,7 @@ export default async function CarreraDetallePage({ params }: RacePageProps) {
                 <span>
                   {questionAvailable
                     ? "Responder pregunta"
-                    : "Esperando apertura"}
+                    : "Pregunta ya respondida hoy"}
                 </span>
                 <span>➜</span>
               </Link>
@@ -179,8 +185,8 @@ export default async function CarreraDetallePage({ params }: RacePageProps) {
                       item.delta > 0
                         ? "positive"
                         : item.delta < 0
-                          ? "negative"
-                          : "",
+                        ? "negative"
+                        : "",
                     ]
                       .filter(Boolean)
                       .join(" ")}
