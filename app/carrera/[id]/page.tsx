@@ -39,12 +39,14 @@ const rankingTop5: RankingItem[] = [
 ];
 
 interface RacePageProps {
-  params: { id: string };
+  params: Promise<{ id: string }>;
 }
 
-export default function CarreraDetallePage({ params }: RacePageProps) {
+export default async function CarreraDetallePage({ params }: RacePageProps) {
+  const { id } = await params;
+
   // Por ahora, si no existe el id, usamos r7 como fallback
-  const race = races[params.id] ?? races["r7"];
+  const race = races[id] ?? races["r7"];
 
   const progress = Math.round((race.daysPlayed / race.daysTotal) * 100);
 

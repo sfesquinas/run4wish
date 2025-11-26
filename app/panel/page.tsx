@@ -1,10 +1,14 @@
 // app/panel/page.tsx
+"use client";
+
 import Link from "next/link";
 import { demoRace, demoUserName } from "../data/r4wDemo";
+import { useWishes } from "../hooks/useWishes";
 
 const activeRaces = [demoRace];
 
 export default function PanelPage() {
+  const { wishes } = useWishes();
   const userName = demoUserName;
   const mainRace = demoRace;
   const totalRaces = activeRaces.length;
@@ -30,13 +34,23 @@ export default function PanelPage() {
                 suerte.
               </div>
             </div>
+            <div style={{ display: "flex", flexDirection: "column", gap: 8, alignItems: "flex-end" }}>
+              <div className="r4w-panel-chip">
+                carreras activas: {totalRaces}
+              </div>
+
+              <Link href="/perfil" className="r4w-secondary-btn">
+                Editar perfil
+                <span>⚙️</span>
+              </Link>
+            </div>
             <div className="r4w-panel-chip">
               carreras activas: {totalRaces}
             </div>
           </header>
 
-          {/* Stats rápidas de la carrera principal */}
-          <div className="r4w-panel-stats">
+                    {/* Stats rápidas de la carrera principal */}
+                    <div className="r4w-panel-stats">
             <div className="r4w-panel-stat">
               <div className="r4w-panel-stat-label">Tu posición</div>
               <div className="r4w-panel-stat-value">
@@ -64,6 +78,14 @@ export default function PanelPage() {
               </div>
               <div className="r4w-panel-stat-caption">
                 Si mantienes la racha, sigues subiendo puestos.
+              </div>
+            </div>
+
+            <div className="r4w-panel-stat">
+              <div className="r4w-panel-stat-label">Wishes hoy</div>
+              <div className="r4w-panel-stat-value">{wishes}</div>
+              <div className="r4w-panel-stat-caption">
+                Cada intento extra en la pregunta consume 1 wish.
               </div>
             </div>
           </div>

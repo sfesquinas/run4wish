@@ -3,216 +3,224 @@
 
 import { useState } from "react";
 import Link from "next/link";
+import { useWishes } from "../hooks/useWishes";
 
-const INITIAL_WISHES_TODAY = 1; // 1 intento incluido; más intentos consumirían wishes extra
-
-const question = {
-  text:
-    "Si hoy pudieras dar un paso concreto hacia uno de tus deseos, ¿qué harías exactamente?",
-  options: [
-    {
-      id: "A",
-      label: "Daría un pequeño paso realista hoy mismo.",
-      correct: true,
-    },
-    {
-      id: "B",
-      label: "Esperaría a tener más tiempo o dinero.",
-      correct: false,
-    },
-    {
-      id: "C",
-      label: "Lo dejaría para más adelante, ahora no es el momento.",
-      correct: false,
-    },
-  ],
+type Option = {
+  id: number;
+  label: string;
+  text: string;
 };
 
-export default function PreguntaDiaPage() {
-  const [selected, setSelected] = useState<string | null>(null);
-  const [wishesLeft, setWishesLeft] = useState<number>(INITIAL_WISHES_TODAY);
-  const [locked, setLocked] = useState(false);
+const QUESTION_TEXT =
+  "Si quieres mejorar tu constancia en Run4Wish, ¿qué es lo más importante?";
+
+const OPTIONS: Option[] = [
+  { id: 0, label: "A", text: "Responder solo cuando te apetezca" },
+  { id: 1, label: "B", text: "Entrar cada día aunque sea 1 minuto" },
+  { id: 2, label: "C", text: "Esperar al último día para responder todo" },
+];
+
+const CORRECT_OPTION_ID = 1;
+
+// Wishes iniciales del día
+const INITIAL_WISHES = 2; // solo referencia visual, el valor real viene del hook
+
+export default function PreguntaPage() {
+  const { wishes, setWishes, isReady } = useWishes();
+  const [attempts, setAttempts] = useState(0);
+  const [selectedOption, setSelectedOption] = useState<number | null>(null);
   const [feedback, setFeedback] = useState<string | null>(null);
   const [isCorrect, setIsCorrect] = useState<boolean | null>(null);
+  const [hasAnsweredCorrectly, setHasAnsweredCorrectly] = useState(false);
 
-  const handleSubmit = () => {
-    if (locked) return;
-    if (!selected) return;
-    if (wishesLeft <= 0) return;
+  const handleOptionClick = (option: Option) => {
+    // Si ya respondió bien, no hacemos nada
+    if (hasAnsweredCorrectly) return;
 
-    const option = question.options.find((o) => o.id === selected);
-    const correct = option?.correct ?? false;
+    setSelectedOption(option.id);
 
-    const remaining = wishesLeft - 1;
-    setWishesLeft(remaining);
+    // PRIMER INTENTO: no gasta wishes
+    if (attempts === 0) {
+      setAttempts(1);
 
-    if (correct) {
-      setIsCorrect(true);
-      setFeedback(
-        "✅ Respuesta correcta. Has sumado constancia para la carrera de hoy."
-      );
-      setLocked(true);
-    } else {
-      setIsCorrect(false);
-      if (remaining > 0) {
+      if (option.id === CORRECT_OPTION_ID) {
+        setIsCorrect(true);
+        setHasAnsweredCorrectly(true);
         setFeedback(
-          "❌ No es correcta. Puedes volver a intentarlo, gastando otro wish."
+          "¡Respuesta correcta! Has sumado constancia en la carrera de hoy."
         );
       } else {
+        setIsCorrect(false);
         setFeedback(
-          "❌ No es correcta y te has quedado sin wishes para hoy. Podrás seguir compitiendo en la próxima pregunta o comprando más wishes (próximamente)."
+          "No es correcta. Puedes volver a intentarlo gastando 1 wish."
         );
-        setLocked(true);
       }
+      if (!isReady) {
+        return (
+          <main className="r4w-question-page">
+            <section className="r4w-question-layout">
+              <div className="r4w-question-card-standalone">
+                <div className="r4w-question-status">Cargando wishes...</div>
+              </div>
+            </section>
+          </main>
+        );
+      }
+      return;
+    }
+
+    // A PARTIR DEL SEGUNDO INTENTO: gasta 1 wish por intento
+    if (wishes <= 0) {
+      setIsCorrect(false);
+      setFeedback(
+        "Te has quedado sin wishes para esta pregunta. En la versión completa podrás comprar más."
+      );
+      return;
+    }
+
+    setAttempts((a) => a + 1);
+    setWishes((w) => w - 1);
+
+    if (option.id === CORRECT_OPTION_ID) {
+      setIsCorrect(true);
+      setHasAnsweredCorrectly(true);
+      setFeedback(
+        "¡Correcto! Has usado un wish extra, pero sigues en la carrera."
+      );
+    } else {
+      setIsCorrect(false);
+      setFeedback(
+        "Sigue sin ser correcta. Mientras te queden wishes, puedes volver a intentarlo."
+      );
     }
   };
 
-  const handleSelect = (id: string) => {
-    if (locked) return;
-    setSelected(id);
-    setFeedback(null);
-    setIsCorrect(null);
-  };
+  const canRetry = !hasAnsweredCorrectly && wishes > 0;
 
   return (
     <main className="r4w-question-page">
       <section className="r4w-question-layout">
-        {/* CABECERA */}
+        {/* Cabecera */}
         <header className="r4w-question-header">
-          <div className="r4w-question-header-main">
-            <div className="r4w-question-label">pregunta del día</div>
-            <h1 className="r4w-question-main-title">
-              Cada respuesta te acerca a tu deseo
+          <div>
+            <div className="r4w-question-label">Pregunta del día · demo</div>
+            <h1 className="r4w-question-title">
+              Suma constancia respondiendo a la pregunta de hoy
             </h1>
             <p className="r4w-question-subtitle">
-              Pregunta tipo test con 3 opciones. Tu constancia y la velocidad
-              con la que respondes impactan en tu posición en la carrera.
+              Recuerda: el primer intento del día no gasta wishes. Cada intento
+              extra consumirá 1 wish.
             </p>
           </div>
-          <div className="r4w-question-chip">carrera 7 días</div>
+
+          <div className="r4w-panel-chip">
+            Wishes disponibles: {wishes}
+          </div>
         </header>
 
-        {/* INFO SUPERIOR */}
-        <div className="r4w-question-info-row">
-          <div className="r4w-question-timer-pill">
-            ⏱ Tiempo restante (demo): 01:23:45
-          </div>
-          <div
-            style={{
-              display: "flex",
-              flexDirection: "column",
-              gap: 4,
-              alignItems: "flex-end",
-            }}
-          >
-            <div className="r4w-question-window">
-              Ventana disponible hoy: de 09:00 a 00:00 (hora local).
-            </div>
-            <div className="r4w-wishes-pill">
-              Wishes para responder hoy: {wishesLeft}
-            </div>
-          </div>
-        </div>
-
-        {/* TARJETA PREGUNTA */}
-        <div className="r4w-question-body">
-          <div className="r4w-question-text">{question.text}</div>
-          <div className="r4w-question-hint">
-            Elige una de las tres opciones. Si fallas y quieres volver a
-            intentarlo, gastarás otro wish. Más adelante podrás comprar wishes
-            extra si los necesitas.
+        {/* Card de pregunta */}
+        <div className="r4w-question-card-standalone">
+          <div className="r4w-question-status">
+            Ventana activa de 09:00 a 00:00 (hora local)
           </div>
 
-          {/* OPCIONES */}
+          <div className="r4w-question-main-text">{QUESTION_TEXT}</div>
+
+          {/* Opciones */}
           <div className="r4w-options-grid">
-            {question.options.map((opt) => {
-              const isSelected = selected === opt.id;
-              const classes = ["r4w-option-card"];
-              if (isSelected) classes.push("selected");
-              if (locked) classes.push("locked");
-              if (isSelected && locked && isCorrect === false)
-                classes.push("incorrect");
-              if (isSelected && locked && isCorrect === true)
-                classes.push("correct");
+            {OPTIONS.map((opt) => {
+              const isSelected = selectedOption === opt.id;
+              const isCorrectOption =
+                hasAnsweredCorrectly && opt.id === CORRECT_OPTION_ID;
+
+              const classes = [
+                "r4w-option-card",
+                isSelected ? "selected" : "",
+                isCorrectOption ? "correct" : "",
+              ]
+                .filter(Boolean)
+                .join(" ");
 
               return (
                 <button
                   key={opt.id}
                   type="button"
-                  onClick={() => handleSelect(opt.id)}
-                  className={classes.join(" ")}
-                  disabled={locked}
+                  className={classes}
+                  onClick={() => handleOptionClick(opt)}
+                  disabled={
+                    hasAnsweredCorrectly ||
+                    (!canRetry && attempts > 0 && opt.id !== selectedOption)
+                  }
                 >
-                  <div className="r4w-option-letter">{opt.id}</div>
-                  <div className="r4w-option-text">{opt.label}</div>
+                  <span className="r4w-option-letter">{opt.label}</span>
+                  <span className="r4w-option-text">{opt.text}</span>
                 </button>
               );
             })}
           </div>
 
-          {/* PIE + BOTÓN */}
-          <div className="r4w-answer-area">
-            <div className="r4w-answer-foot">
-              <span>
-                Cada intento consume 1 wish. Cuando te quedes sin wishes, ya no
-                podrás responder más a la pregunta de hoy.
-              </span>
-
-              <button
-                type="button"
-                className="r4w-primary-btn"
-                onClick={handleSubmit}
-                disabled={!selected || wishesLeft <= 0 || locked}
-                style={{
-                  opacity: !selected || wishesLeft <= 0 || locked ? 0.6 : 1,
-                  paddingInline: 16,
-                  minWidth: 150,
-                }}
-              >
-                <span>
-                  {locked
-                    ? "Respuesta registrada"
-                    : wishesLeft > 0
-                      ? "Enviar respuesta"
-                      : "Sin wishes"}
-                </span>
-                <span>➜</span>
-              </button>
+          {/* Feedback */}
+          {feedback && (
+            <div
+              className={
+                isCorrect ? "r4w-answer-feedback" : "r4w-answer-feedback-error"
+              }
+            >
+              {feedback}
             </div>
+          )}
 
-            {feedback && (
-              <div
-                className={
-                  isCorrect === false
-                    ? "r4w-answer-feedback-error"
-                    : "r4w-answer-feedback"
-                }
-              >
-                {feedback}
-              </div>
-            )}
+          {/* CTA para recargar wishes cuando no quedan */}
+          {!hasAnsweredCorrectly && wishes <= 0 && (
+            <div
+              style={{
+                marginTop: 8,
+                fontSize: 12,
+                color: "var(--r4w-text-muted)",
+                display: "flex",
+                justifyContent: "space-between",
+                alignItems: "center",
+                gap: 8,
+              }}
+            >
+              <span>
+                Te has quedado sin wishes para esta pregunta. En la versión demo
+                puedes recargarlos manualmente.
+              </span>
+              <Link href="/wishes" className="r4w-secondary-btn">
+                Recargar wishes
+                <span>💸</span>
+              </Link>
+            </div>
+          )}
+
+          {/* Info wishes */}
+          <div className="r4w-question-timer" style={{ marginTop: 10 }}>
+            Primer intento del día: <strong>0 wishes</strong>. <br />
+            Cada intento extra: <strong>−1 wish</strong> (cuando haya sistema de
+            compra podrás recargar).
           </div>
-        </div>
 
-        {/* ENLACES INFERIORES */}
-        <div
-          style={{
-            marginTop: 14,
-            display: "flex",
-            justifyContent: "space-between",
-            fontSize: 12,
-            color: "var(--r4w-muted)",
-          }}
-        >
-          <Link href="/carrera/r7" className="r4w-secondary-btn">
-            Volver a la carrera
-            <span>🏁</span>
-          </Link>
+          {/* Navegación */}
+          <div
+            style={{
+              marginTop: 14,
+              display: "flex",
+              justifyContent: "space-between",
+              fontSize: 12,
+              color: "var(--r4w-muted)",
+            }}
+          >
+            <Link href="/carrera/r7" className="r4w-secondary-btn">
+              Volver a la carrera
+              <span>🏁</span>
+            </Link>
 
-          <Link href="/panel" className="r4w-secondary-btn">
-            Ver mi panel
-            <span>📊</span>
-          </Link>
+            <Link href="/panel" className="r4w-secondary-btn">
+              Ver mi panel
+              <span>📊</span>
+            </Link>
+          </div>
         </div>
       </section>
     </main>

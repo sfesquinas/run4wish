@@ -1,193 +1,56 @@
 // app/page.tsx
-"use client";
+import Link from "next/link";
 
-import { FormEvent, useState } from "react";
-import { useRouter } from "next/navigation";
-
-const COUNTRIES = [
-  "España",
-  "México",
-  "Argentina",
-  "Colombia",
-  "Chile",
-  "Perú",
-  "Otro",
-];
-
-const AVATARS = [
-  { id: "runner", label: "Runner", emoji: "🏃‍♀️" },
-  { id: "focus", label: "Focus", emoji: "🎯" },
-  { id: "dreamer", label: "Dreamer", emoji: "💫" },
-];
-
-export default function Home() {
-  const router = useRouter();   // <--- añade esto
-  const [email, setEmail] = useState("");
-  const [year, setYear] = useState("");
-  const [country, setCountry] = useState("España");
-  const [avatar, setAvatar] = useState("runner");
-  const [loading, setLoading] = useState(false);
-
-  const handleSubmit = (e: FormEvent) => {
-    e.preventDefault();
-    setLoading(true);
-
-    // 👉 Aquí luego conectaremos con la API / backend
-    console.log({
-      email,
-      year,
-      country,
-      avatar,
-    });
-
-    // De momento, simulamos éxito y navegamos a /carreras
-    router.push("/carreras");
-  };
-
+export default function HomePage() {
   return (
-    <main className="r4w-page">
-      <section className="r4w-card">
-        {/* LOGO + NOMBRE */}
-        <div className="r4w-logo-row">
-          <div className="r4w-logo-mark">
-            {/* Si prefieres, aquí podemos usar el SVG que subas a /public */}
-            <span>R4W</span>
+    <main className="r4w-home">
+      <section className="r4w-home-card">
+        <div className="r4w-home-left">
+          <div className="r4w-home-badge">MVP · demo</div>
+          <h1 className="r4w-home-title">Corre por tus deseos.</h1>
+          <p className="r4w-home-subtitle">
+            Run4Wish es una carrera digital donde la constancia pesa más que la
+            suerte. Responde una pregunta al día y sube posiciones para
+            acercarte al premio.
+          </p>
+
+          <div className="r4w-home-actions">
+            <Link href="/carreras" className="r4w-primary-btn">
+              Ver carreras activas
+              <span>🏁</span>
+            </Link>
+
+            <Link href="/panel" className="r4w-secondary-btn">
+              Ir a mi panel
+              <span>📊</span>
+            </Link>
           </div>
-          <div className="r4w-logo-text">Run4Wish</div>
+
+          <p className="r4w-home-note">
+            Esta es una versión de prueba. Más adelante podrás elegir entre
+            diferentes carreras, premios y modos de juego.
+          </p>
         </div>
 
-        {/* CLAIM */}
-        <div className="r4w-badge">
-          <span>nuevo reto</span>
-          <span>·</span>
-          <span>constancia &gt; suerte</span>
-        </div>
-
-        <h1 className="r4w-title">Corre por tus sueños</h1>
-        <p className="r4w-subtitle">
-          Esta app no va de suerte, va de constancia. Crea tu perfil y
-          prepárate: cada respuesta diaria te acerca a tu próximo deseo.
-        </p>
-
-        {/* FORMULARIO */}
-        <form className="r4w-form" onSubmit={handleSubmit}>
-          {/* Email */}
-          <div className="r4w-field">
-            <div className="r4w-label-row">
-              <label htmlFor="email" className="r4w-label">
-                Correo electrónico
-              </label>
-              <span className="r4w-label-hint">
-                Solo lo usaremos para validar tu cuenta.
-              </span>
+        <aside className="r4w-home-right">
+          <div className="r4w-home-mini-card">
+            <div className="r4w-home-mini-label">Carrera demo</div>
+            <div className="r4w-home-mini-title">Carrera 7 días · MVP</div>
+            <div className="r4w-home-mini-row">
+              <span>1 pregunta al día</span>
+              <span>100 participantes</span>
             </div>
-            <input
-              id="email"
-              type="email"
-              required
-              placeholder="tucorreo@email.com"
-              className="r4w-input"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-            />
+            <div className="r4w-home-mini-row">
+              <span>Ventana</span>
+              <span>09:00 · 00:00</span>
+            </div>
+
+            <Link href="/carrera/r7" className="r4w-primary-btn" style={{ marginTop: 12 }}>
+              Entrar en la carrera demo
+              <span>➜</span>
+            </Link>
           </div>
-
-          {/* Año de nacimiento */}
-          <div className="r4w-field">
-            <div className="r4w-label-row">
-              <label htmlFor="year" className="r4w-label">
-                Año de nacimiento
-              </label>
-              <span className="r4w-label-hint">Mayores de 18 años.</span>
-            </div>
-            <input
-              id="year"
-              type="number"
-              required
-              placeholder="1985"
-              min={1900}
-              max={new Date().getFullYear()}
-              className="r4w-input"
-              value={year}
-              onChange={(e) => setYear(e.target.value)}
-            />
-          </div>
-
-          {/* País */}
-          <div className="r4w-field">
-            <div className="r4w-label-row">
-              <label htmlFor="country" className="r4w-label">
-                País
-              </label>
-            </div>
-            <select
-              id="country"
-              className="r4w-select"
-              value={country}
-              onChange={(e) => setCountry(e.target.value)}
-            >
-              {COUNTRIES.map((c) => (
-                <option key={c} value={c}>
-                  {c}
-                </option>
-              ))}
-            </select>
-          </div>
-
-          {/* Avatares */}
-          <div className="r4w-field">
-            <div className="r4w-label-row">
-              <span className="r4w-label">Elige tu avatar inicial</span>
-              <span className="r4w-label-hint">
-                Podrás desbloquear más según tu constancia.
-              </span>
-            </div>
-
-            <div className="r4w-avatar-grid">
-              {AVATARS.map((a) => (
-                <label
-                  key={a.id}
-                  className="r4w-avatar-option"
-                  htmlFor={`avatar-${a.id}`}
-                >
-                  <input
-                    id={`avatar-${a.id}`}
-                    type="radio"
-                    name="avatar"
-                    value={a.id}
-                    className="r4w-avatar-radio"
-                    checked={avatar === a.id}
-                    onChange={() => setAvatar(a.id)}
-                  />
-                  <div className="r4w-avatar-tile">
-                    <div className="r4w-avatar-emoji">{a.emoji}</div>
-                    <div className="r4w-avatar-name">{a.label}</div>
-                  </div>
-                </label>
-              ))}
-
-              {/* Ejemplo de avatar bloqueado */}
-              <div className="r4w-avatar-option r4w-avatar-locked">
-                <div className="r4w-avatar-tile">
-                  <div className="r4w-avatar-emoji">🔒</div>
-                  <div className="r4w-avatar-name">Se desbloquea al 1º logro</div>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          {/* BOTÓN CTA */}
-          <button type="submit" className="r4w-primary-btn" disabled={loading}>
-            <span>{loading ? "Creando tu perfil..." : "Entrar a Run4Wish"}</span>
-            <span>➜</span>
-          </button>
-        </form>
-
-        <p className="r4w-footnote">
-          Al continuar, aceptas participar en carreras digitales donde la
-          constancia es la clave. Más adelante podrás revisar nuestras{" "}
-          <a href="#">condiciones</a> y <a href="#">política de privacidad</a>.
-        </p>
+        </aside>
       </section>
     </main>
   );
