@@ -1095,3 +1095,70 @@ button {
     gap: 6px;
   }
 }
+
+/* Opciones tipo test + wishes */
+
+.r4w-wishes-pill {
+  padding: 4px 10px;
+  border-radius: 999px;
+  background-color: #202023;
+  border: 1px solid #343437;
+  font-size: 11px;
+  color: var(--r4w-orange);
+}
+
+.r4w-options-grid {
+  margin-top: 6px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.r4w-option-card {
+  border-radius: 12px;
+  padding: 10px 12px;
+  background-color: #232326;
+  border: 1px solid #414141;
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  cursor: pointer;
+  transition: border-color 0.15s ease, background-color 0.15s ease,
+    transform 0.08s ease, box-shadow 0.15s ease;
+}
+
+.r4w-option-letter {
+  font-weight: 600;
+  font-size: 14px;
+  color: var(--r4w-muted);
+  margin-top: 1px;
+}
+
+.r4w-option-text {
+  font-size: 14px;
+}
+
+.r4w-option-card.selected {
+  border-color: var(--r4w-orange);
+  box-shadow: 0 0 0 1px rgba(255, 122, 26, 0.35);
+  background-color: #262629;
+  transform: translateY(-1px);
+}
+
+.r4w-option-card.locked {
+  cursor: default;
+}
+
+.r4w-option-card.incorrect.selected {
+  border-color: #ff4d4f;
+}
+
+.r4w-option-card.correct.selected {
+  border-color: #5bd27c;
+}
+
+.r4w-answer-feedback-error {
+  color: #ff4d4f;
+  font-size: 12px;
+  margin-top: 6px;
+}
