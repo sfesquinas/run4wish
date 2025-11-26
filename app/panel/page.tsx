@@ -1,33 +1,17 @@
 // app/panel/page.tsx
 import Link from "next/link";
+import { demoRace, demoUserName } from "../data/r4wDemo";
 
-type ActiveRace = {
-  id: string;
-  name: string;
-  position: number;
-  totalParticipants: number;
-  progress: number; // 0–100 constancia
-  daysPlayed: number;
-  daysTotal: number;
-};
-
-const activeRaces: ActiveRace[] = [
-  {
-    id: "r7",
-    name: "Carrera 7 días · MVP",
-    position: 12,
-    totalParticipants: 100,
-    progress: 40,
-    daysPlayed: 3,
-    daysTotal: 7,
-  },
-];
+const activeRaces = [demoRace];
 
 export default function PanelPage() {
-  const userName = "Runner"; // luego vendrá del perfil
-  const mainRace = activeRaces[0];
-
+  const userName = demoUserName;
+  const mainRace = demoRace;
   const totalRaces = activeRaces.length;
+
+  const mainProgress = Math.round(
+    (mainRace.daysPlayed / mainRace.daysTotal) * 100
+  );
 
   return (
     <main className="r4w-panel-page">
@@ -52,44 +36,45 @@ export default function PanelPage() {
           </header>
 
           {/* Stats rápidas de la carrera principal */}
-          {mainRace && (
-            <div className="r4w-panel-stats">
-              <div className="r4w-panel-stat">
-                <div className="r4w-panel-stat-label">Tu posición</div>
-                <div className="r4w-panel-stat-value">
-                  #{mainRace.position}
-                </div>
-                <div className="r4w-panel-stat-caption">
-                  De {mainRace.totalParticipants} participantes
-                </div>
+          <div className="r4w-panel-stats">
+            <div className="r4w-panel-stat">
+              <div className="r4w-panel-stat-label">Tu posición</div>
+              <div className="r4w-panel-stat-value">
+                #{mainRace.position}
               </div>
-
-              <div className="r4w-panel-stat">
-                <div className="r4w-panel-stat-label">Constancia</div>
-                <div className="r4w-panel-stat-value">
-                  {mainRace.progress}%
-                </div>
-                <div className="r4w-panel-stat-caption">
-                  Has respondido {mainRace.daysPlayed} de {mainRace.daysTotal} días
-                </div>
-              </div>
-
-              <div className="r4w-panel-stat">
-                <div className="r4w-panel-stat-label">Racha activa</div>
-                <div className="r4w-panel-stat-value">
-                  {mainRace.daysPlayed} 🔥
-                </div>
-                <div className="r4w-panel-stat-caption">
-                  Si mantienes la racha, sigues subiendo puestos.
-                </div>
+              <div className="r4w-panel-stat-caption">
+                De {mainRace.totalParticipants} participantes
               </div>
             </div>
-          )}
+
+            <div className="r4w-panel-stat">
+              <div className="r4w-panel-stat-label">Constancia</div>
+              <div className="r4w-panel-stat-value">
+                {mainProgress}%
+              </div>
+              <div className="r4w-panel-stat-caption">
+                Has respondido {mainRace.daysPlayed} de {mainRace.daysTotal} días
+              </div>
+            </div>
+
+            <div className="r4w-panel-stat">
+              <div className="r4w-panel-stat-label">Racha activa</div>
+              <div className="r4w-panel-stat-value">
+                {mainRace.daysPlayed} 🔥
+              </div>
+              <div className="r4w-panel-stat-caption">
+                Si mantienes la racha, sigues subiendo puestos.
+              </div>
+            </div>
+          </div>
 
           {/* Lista de carreras en las que participa */}
           <div className="r4w-panel-racelist">
             {activeRaces.map((race) => {
-              const ratio = race.progress / 100;
+              const progress = Math.round(
+                (race.daysPlayed / race.daysTotal) * 100
+              );
+              const ratio = progress / 100;
 
               return (
                 <article key={race.id} className="r4w-panel-racecard">
@@ -162,6 +147,13 @@ export default function PanelPage() {
             <div className="r4w-panel-next-time">
               Ventana de preguntas: de 09:00 a 00:00 (hora local).
             </div>
+          </div>
+
+          <div style={{ marginTop: 12, textAlign: "right" }}>
+            <Link href="/ranking" className="r4w-secondary-btn">
+              Ver ranking completo
+              <span>📈</span>
+            </Link>
           </div>
         </section>
       </div>

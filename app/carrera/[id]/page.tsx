@@ -203,6 +203,12 @@ export default function CarreraDetallePage({ params }: RacePageProps) {
               Cuando la pregunta esté activa, aprovéchala cuanto antes.
             </div>
           </div>
+          <div style={{ marginTop: 12, textAlign: "right" }}>
+            <Link href="/ranking" className="r4w-secondary-btn">
+              Ver ranking completo
+              <span>📈</span>
+            </Link>
+          </div>
         </section>
       </div>
     </main>
