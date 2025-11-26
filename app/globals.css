@@ -434,3 +434,247 @@ button {
     padding: 20px 16px 16px;
   }
 }
+
+/* --- PANEL PERSONAL USUARIO --- */
+
+.r4w-panel-page {
+  min-height: 100vh;
+  padding: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background-color: var(--r4w-bg);
+}
+
+.r4w-panel-layout {
+  width: 100%;
+  max-width: 980px;
+  display: grid;
+  grid-template-columns: minmax(0, 1.5fr) minmax(0, 1fr);
+  gap: 24px;
+}
+
+.r4w-panel-main,
+.r4w-panel-side {
+  background: linear-gradient(145deg, #262629, #18181a);
+  border-radius: 24px;
+  padding: 24px 22px 20px;
+  border: 1px solid #333;
+  box-shadow: 0 18px 40px rgba(0, 0, 0, 0.55);
+}
+
+/* Cabecera */
+
+.r4w-panel-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 16px;
+  margin-bottom: 18px;
+}
+
+.r4w-panel-hello {
+  font-size: 14px;
+  color: var(--r4w-muted);
+}
+
+.r4w-panel-title {
+  font-size: 20px;
+  font-weight: 600;
+  margin-top: 2px;
+}
+
+.r4w-panel-tagline {
+  font-size: 12px;
+  color: var(--r4w-muted);
+}
+
+.r4w-panel-chip {
+  padding: 4px 10px;
+  border-radius: 999px;
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.09em;
+  border: 1px solid rgba(255, 122, 26, 0.5);
+  color: var(--r4w-orange);
+}
+
+/* Stats superiores */
+
+.r4w-panel-stats {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px;
+  margin-bottom: 18px;
+}
+
+.r4w-panel-stat {
+  background-color: #202023;
+  border-radius: 16px;
+  padding: 12px 10px;
+  border: 1px solid #343437;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.r4w-panel-stat-label {
+  font-size: 11px;
+  color: var(--r4w-muted);
+}
+
+.r4w-panel-stat-value {
+  font-size: 18px;
+  font-weight: 600;
+}
+
+.r4w-panel-stat-caption {
+  font-size: 11px;
+  color: var(--r4w-muted);
+}
+
+/* Lista de carreras activas */
+
+.r4w-panel-racelist {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.r4w-panel-racecard {
+  background-color: #202023;
+  border-radius: 18px;
+  padding: 14px 12px;
+  border: 1px solid #343437;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.r4w-panel-race-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.r4w-panel-race-name {
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.r4w-panel-race-pos {
+  font-size: 12px;
+  color: var(--r4w-orange);
+  font-weight: 500;
+}
+
+.r4w-panel-race-meta {
+  font-size: 11px;
+  color: var(--r4w-muted);
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 12px;
+}
+
+.r4w-panel-race-meta span {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.r4w-panel-bar {
+  position: relative;
+  width: 100%;
+  height: 6px;
+  border-radius: 999px;
+  background-color: #2c2c30;
+  overflow: hidden;
+}
+
+.r4w-panel-bar-fill {
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  background: linear-gradient(90deg, #ff932f, #ff7a1a);
+}
+
+/* Lateral derecho: mensaje motivador + siguiente paso */
+
+.r4w-panel-side-title {
+  font-size: 15px;
+  font-weight: 600;
+  margin-bottom: 6px;
+}
+
+.r4w-panel-quote {
+  font-size: 13px;
+  color: var(--r4w-text);
+  margin-bottom: 14px;
+}
+
+.r4w-panel-quote em {
+  color: var(--r4w-orange);
+  font-style: normal;
+}
+
+.r4w-panel-tip {
+  font-size: 12px;
+  color: var(--r4w-muted);
+  margin-bottom: 14px;
+}
+
+.r4w-panel-next {
+  background-color: #202023;
+  border-radius: 16px;
+  padding: 12px 12px 11px;
+  border: 1px solid #343437;
+  font-size: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.r4w-panel-next-label {
+  font-size: 11px;
+  color: var(--r4w-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+
+.r4w-panel-next-main {
+  font-size: 13px;
+}
+
+.r4w-panel-next-time {
+  font-size: 12px;
+  color: var(--r4w-orange);
+}
+
+/* Responsive */
+
+@media (max-width: 900px) {
+  .r4w-panel-layout {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+@media (max-width: 520px) {
+  .r4w-panel-stats {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+.r4w-panel-race-footer {
+  margin-top: 8px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 8px;
+  font-size: 11px;
+  color: var(--r4w-muted);
+}
+
+.r4w-panel-race-footer .r4w-secondary-btn {
+  padding: 6px 12px;
+  font-size: 12px;
+}
