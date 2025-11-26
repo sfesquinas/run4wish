@@ -1,65 +1,194 @@
-import Image from "next/image";
+// app/page.tsx
+"use client";
+
+import { FormEvent, useState } from "react";
+import { useRouter } from "next/navigation";
+
+const COUNTRIES = [
+  "España",
+  "México",
+  "Argentina",
+  "Colombia",
+  "Chile",
+  "Perú",
+  "Otro",
+];
+
+const AVATARS = [
+  { id: "runner", label: "Runner", emoji: "🏃‍♀️" },
+  { id: "focus", label: "Focus", emoji: "🎯" },
+  { id: "dreamer", label: "Dreamer", emoji: "💫" },
+];
 
 export default function Home() {
+  const router = useRouter();   // <--- añade esto
+  const [email, setEmail] = useState("");
+  const [year, setYear] = useState("");
+  const [country, setCountry] = useState("España");
+  const [avatar, setAvatar] = useState("runner");
+  const [loading, setLoading] = useState(false);
+
+  const handleSubmit = (e: FormEvent) => {
+    e.preventDefault();
+    setLoading(true);
+
+    // 👉 Aquí luego conectaremos con la API / backend
+    console.log({
+      email,
+      year,
+      country,
+      avatar,
+    });
+
+    // De momento, simulamos éxito y navegamos a /carreras
+    router.push("/carreras");
+  };
+
   return (
-    <div className="flex min-h-screen items-center justify-center bg-zinc-50 font-sans dark:bg-black">
-      <main className="flex min-h-screen w-full max-w-3xl flex-col items-center justify-between py-32 px-16 bg-white dark:bg-black sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={100}
-          height={20}
-          priority
-        />
-        <div className="flex flex-col items-center gap-6 text-center sm:items-start sm:text-left">
-          <h1 className="max-w-xs text-3xl font-semibold leading-10 tracking-tight text-black dark:text-zinc-50">
-            To get started, edit the page.tsx file.
-          </h1>
-          <p className="max-w-md text-lg leading-8 text-zinc-600 dark:text-zinc-400">
-            Looking for a starting point or more instructions? Head over to{" "}
-            <a
-              href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Templates
-            </a>{" "}
-            or the{" "}
-            <a
-              href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Learning
-            </a>{" "}
-            center.
-          </p>
+    <main className="r4w-page">
+      <section className="r4w-card">
+        {/* LOGO + NOMBRE */}
+        <div className="r4w-logo-row">
+          <div className="r4w-logo-mark">
+            {/* Si prefieres, aquí podemos usar el SVG que subas a /public */}
+            <span>R4W</span>
+          </div>
+          <div className="r4w-logo-text">Run4Wish</div>
         </div>
-        <div className="flex flex-col gap-4 text-base font-medium sm:flex-row">
-          <a
-            className="flex h-12 w-full items-center justify-center gap-2 rounded-full bg-foreground px-5 text-background transition-colors hover:bg-[#383838] dark:hover:bg-[#ccc] md:w-[158px]"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={16}
-              height={16}
+
+        {/* CLAIM */}
+        <div className="r4w-badge">
+          <span>nuevo reto</span>
+          <span>·</span>
+          <span>constancia &gt; suerte</span>
+        </div>
+
+        <h1 className="r4w-title">Corre por tus sueños</h1>
+        <p className="r4w-subtitle">
+          Esta app no va de suerte, va de constancia. Crea tu perfil y
+          prepárate: cada respuesta diaria te acerca a tu próximo deseo.
+        </p>
+
+        {/* FORMULARIO */}
+        <form className="r4w-form" onSubmit={handleSubmit}>
+          {/* Email */}
+          <div className="r4w-field">
+            <div className="r4w-label-row">
+              <label htmlFor="email" className="r4w-label">
+                Correo electrónico
+              </label>
+              <span className="r4w-label-hint">
+                Solo lo usaremos para validar tu cuenta.
+              </span>
+            </div>
+            <input
+              id="email"
+              type="email"
+              required
+              placeholder="tucorreo@email.com"
+              className="r4w-input"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
             />
-            Deploy Now
-          </a>
-          <a
-            className="flex h-12 w-full items-center justify-center rounded-full border border-solid border-black/[.08] px-5 transition-colors hover:border-transparent hover:bg-black/[.04] dark:border-white/[.145] dark:hover:bg-[#1a1a1a] md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Documentation
-          </a>
-        </div>
-      </main>
-    </div>
+          </div>
+
+          {/* Año de nacimiento */}
+          <div className="r4w-field">
+            <div className="r4w-label-row">
+              <label htmlFor="year" className="r4w-label">
+                Año de nacimiento
+              </label>
+              <span className="r4w-label-hint">Mayores de 18 años.</span>
+            </div>
+            <input
+              id="year"
+              type="number"
+              required
+              placeholder="1985"
+              min={1900}
+              max={new Date().getFullYear()}
+              className="r4w-input"
+              value={year}
+              onChange={(e) => setYear(e.target.value)}
+            />
+          </div>
+
+          {/* País */}
+          <div className="r4w-field">
+            <div className="r4w-label-row">
+              <label htmlFor="country" className="r4w-label">
+                País
+              </label>
+            </div>
+            <select
+              id="country"
+              className="r4w-select"
+              value={country}
+              onChange={(e) => setCountry(e.target.value)}
+            >
+              {COUNTRIES.map((c) => (
+                <option key={c} value={c}>
+                  {c}
+                </option>
+              ))}
+            </select>
+          </div>
+
+          {/* Avatares */}
+          <div className="r4w-field">
+            <div className="r4w-label-row">
+              <span className="r4w-label">Elige tu avatar inicial</span>
+              <span className="r4w-label-hint">
+                Podrás desbloquear más según tu constancia.
+              </span>
+            </div>
+
+            <div className="r4w-avatar-grid">
+              {AVATARS.map((a) => (
+                <label
+                  key={a.id}
+                  className="r4w-avatar-option"
+                  htmlFor={`avatar-${a.id}`}
+                >
+                  <input
+                    id={`avatar-${a.id}`}
+                    type="radio"
+                    name="avatar"
+                    value={a.id}
+                    className="r4w-avatar-radio"
+                    checked={avatar === a.id}
+                    onChange={() => setAvatar(a.id)}
+                  />
+                  <div className="r4w-avatar-tile">
+                    <div className="r4w-avatar-emoji">{a.emoji}</div>
+                    <div className="r4w-avatar-name">{a.label}</div>
+                  </div>
+                </label>
+              ))}
+
+              {/* Ejemplo de avatar bloqueado */}
+              <div className="r4w-avatar-option r4w-avatar-locked">
+                <div className="r4w-avatar-tile">
+                  <div className="r4w-avatar-emoji">🔒</div>
+                  <div className="r4w-avatar-name">Se desbloquea al 1º logro</div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* BOTÓN CTA */}
+          <button type="submit" className="r4w-primary-btn" disabled={loading}>
+            <span>{loading ? "Creando tu perfil..." : "Entrar a Run4Wish"}</span>
+            <span>➜</span>
+          </button>
+        </form>
+
+        <p className="r4w-footnote">
+          Al continuar, aceptas participar en carreras digitales donde la
+          constancia es la clave. Más adelante podrás revisar nuestras{" "}
+          <a href="#">condiciones</a> y <a href="#">política de privacidad</a>.
+        </p>
+      </section>
+    </main>
   );
 }
