@@ -6,6 +6,7 @@ import { useEffect, useState } from "react";
 import { demoRace, demoUserName } from "../data/r4wDemo";
 import { useWishes } from "../hooks/useWishes";
 import { useUser } from "../hooks/useUser";
+import { usePreregistrations } from "../hooks/usePreregistrations";
 
 const activeRaces = [demoRace];
 
@@ -19,6 +20,7 @@ export default function PanelPage() {
   const userName = demoUserName;
   const mainRace = demoRace;
   const totalRaces = activeRaces.length;
+  const { preregistrations } = usePreregistrations();
 
   const mainProgress = Math.round(
     (mainRace.daysPlayed / mainRace.daysTotal) * 100
@@ -240,6 +242,20 @@ export default function PanelPage() {
               Ventana de preguntas: de 09:00 a 00:00 (hora local).
             </div>
           </div>
+
+          {preregistrations.length > 0 && (
+            <section className="r4w-panel-prereg">
+              <div className="r4w-panel-next-label">próximas carreras</div>
+              <div className="r4w-panel-next-main">
+                Ya tienes plaza asegurada en {preregistrations.length} futura(s)
+                carrera(s). En las siguientes versiones podrás ver aquí el detalle
+                de cada una.
+              </div>
+              <div className="r4w-panel-next-time">
+                Puedes gestionar tus preregistros desde la sección Carreras.
+              </div>
+            </section>
+          )}
 
           <div style={{ marginTop: 12, textAlign: "right" }}>
             <Link href="/ranking" className="r4w-secondary-btn">

@@ -17,15 +17,29 @@ const initialAvatars = [
   { id: "a8", emoji: "🌍", unlocked: false },
 ];
 
+const COUNTRIES = [
+  "España",
+  "Portugal",
+  "Francia",
+  "Italia",
+  "Alemania",
+  "México",
+  "Argentina",
+  "Colombia",
+  "Chile",
+  "Perú",
+  "Otro",
+];
+
 export default function PerfilPage() {
   const router = useRouter();
   const { user, logout, isReady } = useUser();
-
-  const [username, setUsername] = useState("Runner_You");
   const [country, setCountry] = useState("España");
+  const [username, setUsername] = useState("Runner_You");
   const [soundOn, setSoundOn] = useState(true);
   const [vibrationOn, setVibrationOn] = useState(true);
   const [selectedAvatar, setSelectedAvatar] = useState<string>("a1");
+
 
   // cuando haya usuario, usamos su país como valor inicial
   useEffect(() => {
@@ -131,15 +145,19 @@ export default function PerfilPage() {
               />
             </div>
 
-            {/* País visual para carreras (puede diferir del de cuenta si quieres) */}
             <div>
               <div className="r4w-profile-label">País (visible en carreras)</div>
-              <input
-                className="r4w-profile-input"
-                type="text"
+              <select
+                className="r4w-profile-select"
                 value={country}
                 onChange={(e) => setCountry(e.target.value)}
-              />
+              >
+                {COUNTRIES.map((c) => (
+                  <option key={c} value={c}>
+                    {c}
+                  </option>
+                ))}
+              </select>
             </div>
 
             {/* Toggles */}

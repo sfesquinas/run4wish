@@ -1,7 +1,7 @@
 // app/layout.tsx
 import type { Metadata } from "next";
 import "./globals.css";
-import { R4WTopbar } from "./components/R4WTopbar";
+import { TopNav } from "./components/TopNav";
 
 export const metadata: Metadata = {
   title: "Run4Wish",
@@ -18,7 +18,7 @@ export default function RootLayout({
       <body>
         {/* TOPBAR GLOBAL */}
         <header className="r4w-topbar">
-          <R4WTopbar />
+          <TopNav />
         </header>
 
         {/* CONTENIDO */}

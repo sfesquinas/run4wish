@@ -1,114 +1,195 @@
-import Link from "next/link";
-
 // app/carreras/page.tsx
+"use client";
 
-const upcomingRaces = [
+import Link from "next/link";
+import { useRouter } from "next/navigation";
+import { useUser } from "../hooks/useUser";
+import { useWishes } from "../hooks/useWishes";
+import { usePreregistrations } from "../hooks/usePreregistrations";
+
+type UpcomingRace = {
+  id: string;
+  name: string;
+  durationLabel: string;
+  reward: string;
+  wishCost: number;
+};
+
+const UPCOMING_RACES: UpcomingRace[] = [
   {
-    id: "24h",
-    name: "Sprint 24h",
-    duration: "24 horas",
-    type: "Carrera 1 día",
-    reward: "Insignias exclusivas + Wishes",
-    tag: "Muy pronto",
+    id: "r24h_1",
+    name: "Carrera 24h · Sprint de deseos",
+    durationLabel: "Duración: 1 día (24 preguntas)",
+    reward: "Insignias exclusivas + wishes extra",
+    wishCost: 2,
   },
   {
-    id: "7d",
-    name: "Reto 7 días",
-    duration: "7 días",
-    type: "Constancia diaria",
-    reward: "Experiencia sensorial",
-    tag: "Muy pronto",
+    id: "r7d_2",
+    name: "Carrera 7 días · Experiencia sensorial",
+    durationLabel: "Duración: 7 días (1 pregunta al día)",
+    reward: "Experiencia sensorial para el ganador",
+    wishCost: 3,
   },
   {
-    id: "30d",
-    name: "Desafío 30 días",
-    duration: "30 días",
-    type: "Racha larga",
+    id: "r30d_3",
+    name: "Carrera 30 días · Smartphone",
+    durationLabel: "Duración: 30 días (1 pregunta al día)",
     reward: "Smartphone última generación",
-    tag: "Muy pronto",
+    wishCost: 5,
   },
 ];
 
 export default function CarrerasPage() {
+  const router = useRouter();
+  const { user, isReady: userReady } = useUser();
+  const { wishes, setWishes, isReady: wishesReady } = useWishes();
+  const { preregistrations, addPrereg, isReady: preregReady } =
+    usePreregistrations();
+
+  const isLoading = !userReady || !wishesReady || !preregReady;
+
+  const handlePreregister = (race: UpcomingRace) => {
+    // Si no hay usuario → registro
+    if (!user) {
+      router.push("/registro");
+      return;
+    }
+
+    // Si ya está preregistrado, nada
+    const already = preregistrations.some((p) => p.raceId === race.id);
+    if (already) return;
+
+    // Si no hay wishes suficientes
+    if (wishes < race.wishCost) {
+      alert(
+        `Te faltan wishes. Necesitas ${race.wishCost} wishes para asegurar tu plaza en esta carrera.`
+      );
+      return;
+    }
+
+    // Descontamos wishes y guardamos prerregistro
+    setWishes((w) => Math.max(0, w - race.wishCost));
+    addPrereg(race.id);
+
+    alert("Plaza asegurada ✨ Ya estás dentro de esta próxima carrera.");
+  };
+
+  const userHasPrereg = (raceId: string) =>
+    preregistrations.some((p) => p.raceId === raceId);
+
   return (
     <main className="r4w-races-page">
-      <div className="r4w-races-layout">
-        {/* COLUMNA IZQUIERDA: CARRERA ACTIVA */}
-        <section className="r4w-races-column">
-          <header className="r4w-races-header">
-            <div>
-              <h1 className="r4w-section-title">Tu carrera activa</h1>
-              <p className="r4w-section-subtitle">
-                Empezamos con el MVP: una carrera de 7 días para probar la
-                mecánica.
-              </p>
-            </div>
-            <div className="r4w-pill">Activa</div>
-          </header>
+      <section className="r4w-races-layout">
+        {/* Bloque carrera activa actual */}
+        <section className="r4w-races-active">
+          <h1 className="r4w-races-title">Carreras Run4Wish</h1>
+          <p className="r4w-races-subtitle">
+            Aquí verás tus carreras activas y podrás asegurar plaza en las
+            próximas. La constancia manda, pero llegar a tiempo también cuenta.
+          </p>
 
-          <article className="r4w-race-card">
-            <div>
-              <div className="r4w-race-name">
-                R4W · Carrera 7 días (versión prueba)
+          <div className="r4w-race-card">
+            <div className="r4w-race-card-header">
+              <div>
+                <h2 className="r4w-race-card-title">Carrera 7 días · MVP</h2>
+                <p className="r4w-race-card-meta">
+                  1 pregunta al día · premio demo
+                </p>
               </div>
-              <div className="r4w-race-meta">
-                <span>
-                  <span className="r4w-dot" />
-                  1 pregunta al día
-                </span>
-                <span>Duración: 7 días</span>
-                <span>Modo: constancia &amp; velocidad</span>
-              </div>
+              <span className="r4w-badge-active">Activa</span>
             </div>
 
-            <div className="r4w-race-reward">
-              🎁 Premio: se definirá para la primera carrera oficial.
-            </div>
+            <p className="r4w-race-card-text">
+              Esta es la carrera que estamos usando para probar el MVP. Aquí
+              verás cómo funciona el sistema de preguntas diarias, wishes y
+              posiciones.
+            </p>
 
-            <div className="r4w-race-footer">
-              <span>
-                Responde cada día entre las 9:00 y las 00:00.
-                La constancia es la meta.
-              </span>
-              <Link href="/carrera/r7" className="r4w-secondary-btn">
-                Entrar en la carrera
-                <span>➜</span>
+            <div className="r4w-race-card-actions">
+              <Link href="/carrera/r7" className="r4w-primary-btn">
+                Ir a mi carrera
+                <span>🏁</span>
               </Link>
             </div>
-          </article>
-        </section>
-
-        {/* COLUMNA DERECHA: PRÓXIMAS CARRERAS */}
-        <section className="r4w-races-column">
-          <header className="r4w-races-header">
-            <div>
-              <h2 className="r4w-section-title">Próximas carreras</h2>
-              <p className="r4w-section-subtitle">
-                Aquí listamos las próximas versiones: 24h, 7 días y 30 días.
-              </p>
-            </div>
-          </header>
-
-          <div className="r4w-upcoming-list">
-            {upcomingRaces.map((race) => (
-              <article key={race.id} className="r4w-race-card">
-                <div className="r4w-race-meta">
-                  <span className="r4w-upcoming-pill">{race.tag}</span>
-                </div>
-                <div className="r4w-race-name">{race.name}</div>
-                <div className="r4w-race-meta">
-                  <span>
-                    <span className="r4w-dot" />
-                    {race.type}
-                  </span>
-                  <span>Duración: {race.duration}</span>
-                </div>
-                <div className="r4w-race-reward">🎁 {race.reward}</div>
-              </article>
-            ))}
           </div>
         </section>
-      </div>
+
+        {/* Bloque próximas carreras */}
+        <section className="r4w-races-upcoming">
+          <h2 className="r4w-races-upcoming-title">Próximas carreras</h2>
+          <p className="r4w-races-upcoming-subtitle">
+            Asegura tu plaza antes de que empiecen. El prerregistro se hace con
+            wishes y queda guardado para las próximas versiones con base de
+            datos real.
+          </p>
+
+          {isLoading && (
+            <div className="r4w-race-card">
+              <div className="r4w-question-status">
+                Cargando próximas carreras...
+              </div>
+            </div>
+          )}
+
+          {!isLoading && (
+            <div className="r4w-upcoming-grid">
+              {UPCOMING_RACES.map((race) => {
+                const already = userHasPrereg(race.id);
+                const notEnoughWishes = wishes < race.wishCost;
+
+                return (
+                  <article key={race.id} className="r4w-upcoming-card">
+                    <header className="r4w-upcoming-header">
+                      <h3 className="r4w-upcoming-title">{race.name}</h3>
+                      <div className="r4w-upcoming-duration">
+                        {race.durationLabel}
+                      </div>
+                    </header>
+
+                    <div className="r4w-upcoming-body">
+                      <div className="r4w-upcoming-reward-label">
+                        Premio principal
+                      </div>
+                      <div className="r4w-upcoming-reward">{race.reward}</div>
+
+                      <div className="r4w-upcoming-cost">
+                        Asegura tu plaza por{" "}
+                        <span className="r4w-upcoming-cost-number">
+                          {race.wishCost} wishes
+                        </span>
+                        .
+                      </div>
+
+                      {already && (
+                        <div className="r4w-upcoming-status">
+                          ✔ Plaza asegurada. En próximas versiones podrás ver
+                          aquí todos tus prerregistros en tu perfil.
+                        </div>
+                      )}
+                    </div>
+
+                    <div className="r4w-upcoming-actions">
+                      <button
+                        type="button"
+                        className="r4w-primary-btn"
+                        disabled={already || notEnoughWishes}
+                        onClick={() => handlePreregister(race)}
+                      >
+                        {already
+                          ? "Ya estás dentro"
+                          : notEnoughWishes
+                          ? "Te faltan wishes"
+                          : "Asegurar plaza"}
+                        <span>✨</span>
+                      </button>
+                    </div>
+                  </article>
+                );
+              })}
+            </div>
+          )}
+        </section>
+      </section>
     </main>
   );
 }

@@ -11,6 +11,20 @@ const avatars = [
   { id: "a3", emoji: "🎯" },
 ];
 
+const COUNTRIES = [
+  "España",
+  "Portugal",
+  "Francia",
+  "Italia",
+  "Alemania",
+  "México",
+  "Argentina",
+  "Colombia",
+  "Chile",
+  "Perú",
+  "Otro",
+];
+
 export default function RegistroPage() {
   const router = useRouter();
   const { user, setUser } = useUser();
@@ -67,7 +81,7 @@ export default function RegistroPage() {
       router.push("/panel");
       return;
     }
-  
+
     const updated: R4WUser = { ...user, verified: true };
     setUser(updated);
     router.push("/panel");
@@ -114,14 +128,19 @@ export default function RegistroPage() {
                   />
                 </div>
 
-                <div style={{ marginBottom: 10 }}>
-                  <div className="r4w-profile-label">País</div>
-                  <input
-                    type="text"
-                    className="r4w-profile-input"
+                <div className="r4w-profile-field" style={{ marginBottom: 18 }}>
+                  <label className="r4w-profile-label">País</label>
+                  <select
+                    className="r4w-profile-select"
                     value={country}
                     onChange={(e) => setCountry(e.target.value)}
-                  />
+                  >
+                    {COUNTRIES.map((c) => (
+                      <option key={c} value={c}>
+                        {c}
+                      </option>
+                    ))}
+                  </select>
                 </div>
 
                 <div style={{ marginBottom: 10 }}>
