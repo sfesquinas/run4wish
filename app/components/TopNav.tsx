@@ -1,6 +1,7 @@
 // app/components/TopNav.tsx
 "use client";
 
+import Link from "next/link";
 import { useState } from "react";
 import { useRouter, usePathname } from "next/navigation";
 import { useUser } from "../hooks/useUser";
@@ -33,33 +34,36 @@ export function TopNav() {
 
   return (
     <header className="r4w-topbar">
-      {/* Logo / botón menú */}
+      {/* Logo + botón menú */}
       <button
         type="button"
         className="r4w-logo-btn"
         onClick={() => setOpen((v) => !v)}
       >
-        <span className="r4w-logo-mark">R4W</span>
+        <img
+          src="/r4w-icon.png"
+          alt="Run4Wish"
+          className="r4w-logo-img"
+        />
+        <span className="r4w-logo-chevron">▾</span>
       </button>
 
+      {/* Título centrado */}
       <div className="r4w-topbar-title">Run4Wish</div>
 
-      {/* Espaciador a la derecha */}
+      {/* Espaciador derecha (por si luego añadimos iconos) */}
       <div style={{ width: 32 }} />
 
-      {/* Dropdown */}
+      {/* Dropdown de navegación */}
       {open && (
-        <div className="r4w-nav-dropdown">
+        <div className="r4w-topbar-menu">
           {MENU_ITEMS.map((item) => {
             const active = pathname?.startsWith(item.href);
             return (
               <button
                 key={item.id}
                 type="button"
-                className={[
-                  "r4w-nav-item",
-                  active ? "active" : "",
-                ]
+                className={["r4w-nav-item", active ? "active" : ""]
                   .filter(Boolean)
                   .join(" ")}
                 onClick={() => handleNav(item.href)}
