@@ -1,8 +1,8 @@
-import Link from "next/link";
 // app/pregunta/page.tsx
 "use client";
 
 import { useState } from "react";
+import Link from "next/link";
 
 const INITIAL_WISHES_TODAY = 1; // 1 intento incluido; más intentos consumirían wishes extra
 
