@@ -2,13 +2,20 @@
 "use client";
 
 import Link from "next/link";
+import { useEffect, useState } from "react";
 import { demoRace, demoUserName } from "../data/r4wDemo";
 import { useWishes } from "../hooks/useWishes";
+import { useUser } from "../hooks/useUser";
 
 const activeRaces = [demoRace];
 
 export default function PanelPage() {
   const { wishes } = useWishes();
+  const { user } = useUser();
+  const [lastAdvance, setLastAdvance] = useState<{
+    positions: number;
+    ts: number;
+  } | null>(null);
   const userName = demoUserName;
   const mainRace = demoRace;
   const totalRaces = activeRaces.length;
@@ -17,9 +24,47 @@ export default function PanelPage() {
     (mainRace.daysPlayed / mainRace.daysTotal) * 100
   );
 
+  // 🔥 MOSTRAR AVANCE GUARDADO AL ACERTAR UNA PREGUNTA
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+
+    try {
+      const raw = window.localStorage.getItem("r4w_last_advance");
+      if (!raw) return;
+
+      const parsed = JSON.parse(raw) as { positions: number; ts: number };
+      setLastAdvance(parsed);
+    } catch {
+      // silencioso
+    }
+  }, []);
+
+  const dismissAdvanceBanner = () => {
+    setLastAdvance(null);
+    if (typeof window !== "undefined") {
+      window.localStorage.removeItem("r4w_last_advance");
+    }
+  };
+
   return (
     <main className="r4w-panel-page">
       <div className="r4w-panel-layout">
+        {!user && (
+          <div className="r4w-panel-advance-banner" style={{ marginBottom: 12 }}>
+            <div className="r4w-panel-advance-main">
+              <span className="r4w-panel-advance-emoji">👤</span>
+              <div>
+                <div className="r4w-panel-advance-title">
+                  Estás en modo demo sin registro
+                </div>
+                <div className="r4w-panel-advance-text">
+                  Si te registras con tu email, podremos guardar tu progreso y
+                  usarlo en la versión real.
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
         {/* COLUMNA IZQUIERDA: resumen + carreras activas */}
         <section className="r4w-panel-main">
           {/* Cabecera */}
@@ -49,8 +94,33 @@ export default function PanelPage() {
             </div>
           </header>
 
-                    {/* Stats rápidas de la carrera principal */}
-                    <div className="r4w-panel-stats">
+          {lastAdvance && (
+            <div className="r4w-panel-advance-banner">
+              <div className="r4w-panel-advance-main">
+                <span className="r4w-panel-advance-emoji">🎉</span>
+                <div>
+                  <div className="r4w-panel-advance-title">
+                    ¡Has avanzado posiciones!
+                  </div>
+                  <div className="r4w-panel-advance-text">
+                    En la última pregunta adelantaste{" "}
+                    <strong>{lastAdvance.positions}</strong> puestos en tu
+                    carrera.
+                  </div>
+                </div>
+              </div>
+              <button
+                type="button"
+                className="r4w-panel-advance-close"
+                onClick={dismissAdvanceBanner}
+              >
+                ✕
+              </button>
+            </div>
+          )}
+
+          {/* Stats rápidas de la carrera principal */}
+          <div className="r4w-panel-stats">
             <div className="r4w-panel-stat">
               <div className="r4w-panel-stat-label">Tu posición</div>
               <div className="r4w-panel-stat-value">

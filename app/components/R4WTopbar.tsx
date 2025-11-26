@@ -3,9 +3,16 @@
 
 import Link from "next/link";
 import { useWishes } from "../hooks/useWishes";
+import { useUser } from "../hooks/useUser";
 
 export function R4WTopbar() {
   const { wishes } = useWishes();
+  const { user } = useUser();
+
+  const shortEmail =
+    user?.email && user.email.length > 18
+      ? user.email.slice(0, 18) + "…"
+      : user?.email;
 
   return (
     <div className="r4w-topbar-inner">
@@ -37,6 +44,22 @@ export function R4WTopbar() {
         <div className="r4w-topbar-wishes-pill">
           Wishes: <span>{wishes}</span>
         </div>
+
+        {user ? (
+          <span
+            style={{
+              fontSize: 11,
+              marginLeft: 6,
+              opacity: 0.8,
+            }}
+          >
+            {shortEmail}
+          </span>
+        ) : (
+          <Link href="/registro" className="r4w-topbar-link">
+            Registrarme
+          </Link>
+        )}
       </nav>
     </div>
   );

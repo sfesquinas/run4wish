@@ -30,6 +30,9 @@ export default function PreguntaPage() {
   const [feedback, setFeedback] = useState<string | null>(null);
   const [isCorrect, setIsCorrect] = useState<boolean | null>(null);
   const [hasAnsweredCorrectly, setHasAnsweredCorrectly] = useState(false);
+  const [celebration, setCelebration] = useState<{ positions: number } | null>(
+    null
+  );
 
   const handleOptionClick = (option: Option) => {
     // Si ya respondió bien, no hacemos nada
@@ -63,8 +66,23 @@ export default function PreguntaPage() {
 
       // Mensaje temporal de puestos adelantados (simulado)
       const puestosAdelantados = Math.floor(Math.random() * 8) + 3; // entre 3 y 10
+
+      // Guardamos el avance para mostrarlo en el panel personal
+      if (typeof window !== "undefined") {
+        window.localStorage.setItem(
+          "r4w_last_advance",
+          JSON.stringify({
+            positions: puestosAdelantados,
+            ts: Date.now(),
+          })
+        );
+      }
+
+      setCelebration({ positions: puestosAdelantados });
+
       setFeedback(
         `¡Respuesta correcta! 🎉 Has adelantado ${puestosAdelantados} puestos.`
+
       );
     } else {
       setIsCorrect(false);
@@ -196,17 +214,32 @@ export default function PreguntaPage() {
               color: "var(--r4w-muted)",
             }}
           >
-            <Link href="/carrera/r7" className="r4w-secondary-btn">
-              Volver a la carrera
-              <span>🏁</span>
-            </Link>
-
             <Link href="/panel" className="r4w-secondary-btn">
               Ver mi panel
               <span>📊</span>
             </Link>
           </div>
         </div>
+
+        {celebration && (
+          <div className="r4w-cele-overlay">
+            <div className="r4w-cele-card">
+              <div className="r4w-cele-title">¡Lo has hecho! 🎉</div>
+              <div className="r4w-cele-text">
+                Tu respuesta ha sido correcta y has adelantado{" "}
+                <strong>{celebration.positions}</strong> puestos en la carrera.
+              </div>
+              <button
+                type="button"
+                className="r4w-primary-btn"
+                onClick={() => setCelebration(null)}
+              >
+                Estoy motivado
+                <span>💥</span>
+              </button>
+            </div>
+          </div>
+        )}
       </section>
     </main>
   );
