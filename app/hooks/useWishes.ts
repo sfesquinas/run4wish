@@ -3,51 +3,60 @@
 
 import { useEffect, useState } from "react";
 
-const STORAGE_KEY = "r4w_demo_wishes";
-const DEFAULT_WISHES = 2; // mismo número que en la pregunta demo
+const STORAGE_KEY = "r4w_wishes_demo";
+
+// Estado global (compartido por todos los componentes)
+let wishesStore = 0;
+let initialized = false;
+let listeners: Array<(value: number) => void> = [];
+
+function loadInitialWishes() {
+  if (initialized) return wishesStore;
+  initialized = true;
+
+  if (typeof window === "undefined") {
+    wishesStore = 0;
+    return wishesStore;
+  }
+
+  const raw = window.localStorage.getItem(STORAGE_KEY);
+  wishesStore = raw ? Number(raw) || 0 : 0;
+  return wishesStore;
+}
+
+function updateStore(next: number) {
+  wishesStore = next;
+  if (typeof window !== "undefined") {
+    window.localStorage.setItem(STORAGE_KEY, String(next));
+  }
+  listeners.forEach((l) => l(next));
+}
 
 export function useWishes() {
-  const [wishes, setWishes] = useState<number | null>(null);
+  const [wishes, setWishesState] = useState<number>(() => loadInitialWishes());
 
-  // Cargar de localStorage solo en el cliente
+  // Suscribimos este componente a los cambios globales
   useEffect(() => {
-    if (typeof window === "undefined") return;
-
-    try {
-      const stored = window.localStorage.getItem(STORAGE_KEY);
-      if (stored !== null) {
-        const parsed = parseInt(stored, 10);
-        setWishes(Number.isNaN(parsed) ? DEFAULT_WISHES : parsed);
-      } else {
-        setWishes(DEFAULT_WISHES);
-        window.localStorage.setItem(STORAGE_KEY, String(DEFAULT_WISHES));
-      }
-    } catch {
-      setWishes(DEFAULT_WISHES);
-    }
+    const listener = (value: number) => setWishesState(value);
+    listeners.push(listener);
+    return () => {
+      listeners = listeners.filter((l) => l !== listener);
+    };
   }, []);
 
-  const updateWishes = (value: number | ((prev: number) => number)) => {
-    setWishes((prevRaw) => {
-      const prev = prevRaw ?? DEFAULT_WISHES;
-      const next =
-        typeof value === "function" ? (value as (p: number) => number)(prev) : value;
-
-      if (typeof window !== "undefined") {
-        window.localStorage.setItem(STORAGE_KEY, String(next));
-      }
-      return next;
-    });
+  const setWishes = (
+    updater: number | ((prev: number) => number)
+  ): void => {
+    const next =
+      typeof updater === "function"
+        ? (updater as (p: number) => number)(wishesStore)
+        : updater;
+    updateStore(next);
   };
 
   const resetWishes = () => {
-    updateWishes(DEFAULT_WISHES);
+    updateStore(0);
   };
 
-  return {
-    wishes: (wishes ?? DEFAULT_WISHES),
-    setWishes: updateWishes,
-    resetWishes,
-    isReady: wishes !== null,
-  };
+  return { wishes, setWishes, resetWishes };
 }

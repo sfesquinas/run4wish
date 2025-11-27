@@ -154,6 +154,10 @@ input:focus {
   border-color: #5A5A5A;
 }
 
+.r4w-btn-disabled {
+  opacity: 0.5;
+  cursor: default;
+}
 /* ===========================
      ONBOARDING / REGISTRO
      =========================== */
@@ -1984,39 +1988,33 @@ input:focus {
   cursor: pointer;
 }
 
-.r4w-logo-img {
-  width: 32px;
-  height: 32px;
-  border-radius: 0;
-  box-shadow: none;
-  object-fit: contain;
-
-  /* 💓 latido sutil */
-  transform-origin: center;
+/* Logo TopNav – latido sutil */
+.r4w-topnav-logo img {
+  display: block;
+  border-radius: 6px;
+  transition: transform 0.25s ease-out, box-shadow 0.25s ease-out;
   animation: r4w-logo-heartbeat 2.4s ease-in-out infinite;
 }
 
 @keyframes r4w-logo-heartbeat {
-  0% {
-    transform: scale(1);
-    filter: drop-shadow(0 0 0 rgba(255, 122, 26, 0));
-  }
-  20% {
-    transform: scale(1.06);
-    filter: drop-shadow(0 0 10px rgba(255, 122, 26, 0.35));
-  }
-  40% {
-    transform: scale(1);
-    filter: drop-shadow(0 0 0 rgba(255, 122, 26, 0.0));
-  }
-  60% {
-    transform: scale(1.04);
-    filter: drop-shadow(0 0 6px rgba(255, 122, 26, 0.25));
-  }
+  0%,
   100% {
     transform: scale(1);
-    filter: drop-shadow(0 0 0 rgba(255, 122, 26, 0));
+    box-shadow: 0 0 0 0 rgba(255, 149, 0, 0.0);
   }
+  35% {
+    transform: scale(1.04);
+    box-shadow: 0 0 16px 0 rgba(255, 149, 0, 0.45);
+  }
+  60% {
+    transform: scale(1.02);
+    box-shadow: 0 0 10px 0 rgba(255, 149, 0, 0.25);
+  }
+}
+
+/* Por si quedaba algún fondo blanco alrededor del logo */
+.r4w-topnav-logo {
+  background: transparent;
 }
 
 .r4w-secondary-btn[disabled] {
@@ -3179,4 +3177,264 @@ input:focus {
 .r4w-wishes-layout {
   max-width: 960px;
   margin: 24px auto 0; /* reduce distancia con la cabecera */
+}
+/* ---------- TIENDA DE WISHES · DISEÑO LIMPIO ---------- */
+
+.r4w-wishes-page {
+  min-height: calc(100vh - 72px);      /* ocupa pantalla sin dejar “vacío” arriba */
+  display: flex;
+  justify-content: center;
+  align-items: flex-start;
+  padding: 24px 16px 40px;
+}
+
+.r4w-wishes-layout {
+  width: 100%;
+  max-width: 960px;
+  margin: 0 auto;
+}
+
+/* Cabecera más compacta y visual */
+.r4w-wishes-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 16px;
+  margin-bottom: 24px;
+}
+
+.r4w-wishes-title {
+  font-size: 26px;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+}
+
+.r4w-question-label {
+  text-transform: uppercase;
+  font-size: 11px;
+  letter-spacing: 0.14em;
+  color: var(--r4w-text-muted);
+  margin-bottom: 4px;
+}
+
+.r4w-wishes-subtitle {
+  margin-top: 6px;
+  font-size: 13px;
+  line-height: 1.5;
+  max-width: 520px;
+  color: var(--r4w-text-muted);
+}
+
+/* Chip de wishes actuales alineado con la cabecera */
+.r4w-panel-chip {
+  align-self: center;
+}
+
+/* Packs de wishes más visuales */
+.r4w-wishes-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px;
+  margin-top: 8px;
+}
+
+@media (max-width: 768px) {
+  .r4w-wishes-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .r4w-wishes-header {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .r4w-panel-chip {
+    align-self: flex-start;
+    margin-top: 8px;
+  }
+}
+
+.r4w-wish-pack {
+  border-radius: 18px;
+  border: 1px solid var(--r4w-border-strong, #393939);
+  background: radial-gradient(circle at top left,
+      rgba(255, 152, 0, 0.08),
+      rgba(0, 0, 0, 0.8));
+  padding: 14px 18px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: flex-start;
+  gap: 4px;
+  transition: transform 0.16s ease, box-shadow 0.16s ease,
+    border-color 0.16s ease, background 0.16s ease;
+}
+
+.r4w-wish-pack:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 22px rgba(0, 0, 0, 0.55);
+  border-color: var(--r4w-accent, #ff9500);
+}
+
+.r4w-wish-pack-main {
+  font-size: 18px;
+  font-weight: 600;
+}
+
+.r4w-wish-pack-note {
+  font-size: 13px;
+  color: var(--r4w-text-muted);
+}
+
+/* Footer más pegado a la tarjeta, sin tanto vacío */
+.r4w-wishes-footer {
+  margin-top: 20px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  justify-content: space-between;
+}
+
+/* Toast de wishes más compacto (por si no lo tenías ya así) */
+.r4w-toast {
+  position: fixed;
+  inset: 0;
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  pointer-events: none;
+  padding: 0 16px 32px;
+  z-index: 60;
+}
+
+.r4w-toast-card {
+  pointer-events: auto;
+  background: rgba(9, 9, 9, 0.94);
+  border-radius: 20px;
+  border: 1px solid rgba(255, 149, 0, 0.5);
+  padding: 14px 18px;
+  max-width: 360px;
+  width: 100%;
+  box-shadow: 0 14px 45px rgba(0, 0, 0, 0.7);
+}
+
+.r4w-toast-title {
+  font-size: 14px;
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  color: var(--r4w-accent, #ff9500);
+  margin-bottom: 6px;
+}
+
+.r4w-toast-text {
+  font-size: 13px;
+  line-height: 1.5;
+  margin-bottom: 12px;
+}
+
+.r4w-toast-btn {
+  width: 100%;
+  justify-content: center;
+  font-size: 14px;
+}
+/* ===== TIENDA WISHES · AJUSTE VISUAL V2 ===== */
+
+/* Menos espacio entre topbar y tarjeta */
+.r4w-wishes-page {
+  padding-top: 8px;
+}
+
+/* Botones +1, +3, +5 en una sola fila */
+.r4w-wishes-grid {
+  margin-top: 12px;
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 10px;
+}
+
+/* Mantener 3 columnas también en móvil */
+@media (max-width: 480px) {
+  .r4w-wishes-grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+
+/* Packs más compactos y centrados */
+.r4w-wish-pack {
+  padding: 12px 10px;
+  align-items: center;
+}
+
+.r4w-wish-pack-main {
+  font-size: 16px;
+}
+
+/* Ocultar textos de debajo (+1, +3, +5) */
+.r4w-wish-pack-note {
+  display: none;
+}
+
+/* Chip de WISHES ACTUALES centrado y con número grande */
+.r4w-wishes-chip {
+  border-radius: 999px;
+  border: 1px solid var(--r4w-accent, #ff9500);
+  padding: 6px 18px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  font-size: 11px;
+}
+
+.r4w-wishes-chip span {
+  opacity: 0.9;
+}
+
+.r4w-wishes-chip strong {
+  font-size: 16px;
+  font-weight: 700;
+}
+/* ===== BOTONES DE RECARGA EN NARANJA ===== */
+
+/* ===== BOTONES DE RECARGA EN NARANJA ===== */
+
+.r4w-wish-pack {
+  background: rgba(255, 140, 0, 0.339); /* fondo suave naranja */
+  border: 1px solid rgba(255, 140, 0, 0.35); /* borde naranja */
+  border-radius: 14px;
+  padding: 12px 10px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  color: #ffffff;
+  cursor: pointer;
+  transition: all 0.25s ease;
+  box-shadow: 0 0 6px rgba(255, 140, 0, 0.15); /* glow suave */
+}
+
+.r4w-wish-pack:hover {
+  background: rgba(255, 140, 0, 0.386);
+  border-color: rgba(255, 140, 0, 0.55);
+  box-shadow: 0 0 14px rgba(255, 140, 0, 0.45);
+  transform: scale(1.03);
+}
+
+.r4w-wish-pack:active {
+  transform: scale(0.98);
+  box-shadow: 0 0 10px rgba(255, 140, 0, 0.4);
+}
+
+/* Texto principal */
+.r4w-wish-pack-main {
+  font-size: 17px;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+}
+
+/* Ocultamos el subtítulo */
+.r4w-wish-pack-note {
+  display: none;
 }

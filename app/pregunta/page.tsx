@@ -7,6 +7,7 @@ import confetti from "canvas-confetti";
 import { useWishes } from "../hooks/useWishes";
 import { useRaceProgress } from "../hooks/useRaceProgress";
 
+
 type Option = {
   id: number;
   label: string;
@@ -25,16 +26,38 @@ const OPTIONS: Option[] = [
 const CORRECT_OPTION_ID = 1;
 
 export default function PreguntaPage() {
-  const { wishes, setWishes, isReady } = useWishes();
+  // const { user, isReady } = useUser();
+  const { wishes, setWishes, } = useWishes();
   const { answeredToday, markAnsweredToday } = useRaceProgress("r7", 7);
   const [attempts, setAttempts] = useState(0);
   const [selectedOption, setSelectedOption] = useState<number | null>(null);
   const [feedback, setFeedback] = useState<string | null>(null);
   const [isCorrect, setIsCorrect] = useState<boolean | null>(null);
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const [hasAnsweredCorrectly, setHasAnsweredCorrectly] = useState(false);
+  const [hasAnswered, setHasAnswered] = useState<boolean>(false);
   const [celebration, setCelebration] = useState<{ positions: number } | null>(
     null
   );
+
+  const handleSubmitAnswer = async () => {
+    // si ya se respondió, no hacemos nada
+    if (hasAnswered) return;
+
+    setIsSubmitting(true);
+    try {
+      // 🔸 aquí va tu lógica actual de guardar la respuesta
+      // await submitAnswer(...);
+
+      // cuando el backend confirme:
+      setHasAnswered(true);
+    } catch (e) {
+      console.error(e);
+      // si quieres, algún aviso de error aquí
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
 
   const handleOptionClick = (option: Option) => {
     // Si ya respondió bien, no hacemos nada
@@ -97,17 +120,16 @@ export default function PreguntaPage() {
     }
   };
 
-  if (!isReady) {
-    return (
-      <main className="r4w-question-page">
-        <section className="r4w-question-layout">
-          <div className="r4w-question-card-standalone">
-            <div className="r4w-question-status">Cargando wishes...</div>
-          </div>
-        </section>
-      </main>
-    );
-  }
+  //if (!isReady) {
+    //return (
+      //<main className="r4w-question-page">
+        //<section className="r4w-question-layout">
+          //<div className="r4w-question-card-standalone">
+          //</div>
+        //</section>
+      //</main>
+    //);
+  //}
 
   // 🔒 Si ya has respondido la pregunta de hoy, mostramos mensaje y no dejamos jugar
   if (answeredToday) {
@@ -261,14 +283,25 @@ export default function PreguntaPage() {
                 Tu respuesta ha sido correcta y has adelantado{" "}
                 <strong>{celebration.positions}</strong> puestos en la carrera.
               </div>
+              {/* ... JSX anterior de la tarjeta de pregunta ... */}
+
               <button
                 type="button"
-                className="r4w-primary-btn"
-                onClick={() => setCelebration(null)}
+                className={
+                  "r4w-primary-btn r4w-question-submit" +
+                  (hasAnswered ? " r4w-btn-disabled" : "")
+                }
+                onClick={handleSubmitAnswer}
+                disabled={isSubmitting || hasAnswered}
               >
-                Estoy motivado
-                <span>💥</span>
+                {hasAnswered
+                  ? "Pregunta ya respondida ✅"
+                  : isSubmitting
+                    ? "Cargando wishes..."
+                    : "Responder y sumar wishes"}
               </button>
+
+              {/* ... JSX que venga después ... */}
             </div>
           </div>
         )}

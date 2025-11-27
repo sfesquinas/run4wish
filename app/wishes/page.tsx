@@ -43,7 +43,10 @@ export default function WishesPage() {
             </p>
           </div>
 
-          <div className="r4w-panel-chip">Wishes actuales: {wishes}</div>
+          <div className="r4w-wishes-chip">
+            <span>Wishes actuales:</span>
+            <strong>{wishes}</strong>
+          </div>
         </header>
 
         <div className="r4w-wishes-grid">

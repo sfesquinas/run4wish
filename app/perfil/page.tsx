@@ -33,8 +33,9 @@ export default function PerfilPage() {
   const [vibrationOn, setVibrationOn] = useState(true);
   const [selectedAvatar, setSelectedAvatar] = useState<string>("a1");
   const [saving, setSaving] = useState(false);
-    // Aviso suave al guardar el perfil
-    const [profileNotice, setProfileNotice] = useState<string | null>(null);
+
+  // Aviso suave al guardar el perfil
+  const [profileNotice, setProfileNotice] = useState<string | null>(null);
 
   // Cargar datos del perfil guardado o, si no hay, datos del usuario
   useEffect(() => {
@@ -48,16 +49,13 @@ export default function PerfilPage() {
         if (p.username) setUsername(p.username);
         if (p.country) setCountry(p.country);
         if (typeof p.soundOn === "boolean") setSoundOn(p.soundOn);
-        if (typeof p.vibrationOn === "boolean")
-          setVibrationOn(p.vibrationOn);
+        if (typeof p.vibrationOn === "boolean") setVibrationOn(p.vibrationOn);
         if (p.avatarId) setSelectedAvatar(p.avatarId);
         return;
       }
 
       // Si no había perfil guardado, usamos algunos datos del user
-      if (user?.country) {
-        setCountry(user.country);
-      }
+      if (user?.country) setCountry(user.country);
       if ((user as any).avatarId) {
         setSelectedAvatar((user as any).avatarId as string);
       }
@@ -90,9 +88,11 @@ export default function PerfilPage() {
         JSON.stringify(profileToStore)
       );
 
-      // aviso bonito
-      setProfileNotice("Perfil actualizado ✔️");
-      setTimeout(() => setProfileNotice(null), 2500);
+      // Aviso bonito en lugar del alert nativo
+      setProfileNotice(
+        "Perfil actualizado ✔️ Tus cambios ya se han guardado en Run4Wish."
+      );
+      setTimeout(() => setProfileNotice(null), 3000);
     } finally {
       setSaving(false);
     }
@@ -275,13 +275,13 @@ export default function PerfilPage() {
           </div>
         </aside>
       </section>
-    
+
+      {/* Toast de confirmación de perfil */}
       {profileNotice && (
         <div className="r4w-toast">
           <div className="r4w-toast-card">
-            <div className="r4w-toast-title">Perfil actualizado ✔️</div>
+            <div className="r4w-toast-title">Perfil actualizado ✨</div>
             <p className="r4w-toast-text">{profileNotice}</p>
-
             <button
               type="button"
               className="r4w-primary-btn r4w-toast-btn"
