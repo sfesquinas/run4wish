@@ -1,7 +1,13 @@
 // app/layout.tsx
-import type { Metadata } from "next";
 import "./globals.css";
-import { TopNav } from "./components/TopNav";
+import type { Metadata } from "next";
+import TopNav from "./components/TopNav"; // ⬅️ ESTA LÍNEA ASÍ, SIN LLAVES
+
+{/ * TOPBAR GLOBAL * /}
+<header className="r4w-topbar">
+  <TopNav />
+</header>
+{/ * CONTENIDO * /}
 
 export const metadata: Metadata = {
   title: "Run4Wish",

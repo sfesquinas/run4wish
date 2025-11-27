@@ -2025,6 +2025,146 @@ input:focus {
   box-shadow: none;
 }
 
+/* ---------- TOPBAR ---------- */
+
+.r4w-topnav {
+  position: sticky;
+  top: 0;
+  z-index: 40;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 8px 16px;
+  background: radial-gradient(circle at top left, #1a1a1a 0, #000 60%);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+}
+
+/* botón del logo: SIN fondo blanco */
+.r4w-topnav-brand {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  border: none;
+  background: transparent;   /* <- esto quita el rectángulo blanco */
+  padding: 0;
+  cursor: pointer;
+}
+
+.r4w-topnav-logo {
+  width: 36px;
+  height: 36px;
+  border-radius: 12px;
+  overflow: hidden;
+}
+
+.r4w-topnav-text {
+  font-size: 14px;
+  letter-spacing: 0.35em;
+  text-transform: uppercase;
+  color: #f5f5f5;
+  white-space: nowrap;
+}
+
+.r4w-topnav-4 {
+  color: #ff9c32; /* el 4 en naranja */
+}
+
+.r4w-topnav-caret {
+  font-size: 10px;
+  margin-top: 1px;
+}
+
+.r4w-topnav-right {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 2px;
+  font-size: 12px;
+}
+
+.r4w-topnav-user-name {
+  font-weight: 500;
+}
+
+.r4w-topnav-wishes span {
+  font-weight: 600;
+}
+
+@media (min-width: 768px) {
+  .r4w-topnav {
+    padding-inline: 32px;
+  }
+}
+
+/* ---------- MENÚ OVERLAY ---------- */
+
+.r4w-menu-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 50;
+  background: rgba(0, 0, 0, 0.75);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.r4w-menu-card {
+  width: min(420px, 92vw);
+  background: #111216;
+  border-radius: 24px;
+  border: 1px solid rgba(255, 153, 51, 0.6);
+  padding: 18px 18px 20px;
+  box-shadow: 0 18px 45px rgba(0, 0, 0, 0.7);
+}
+
+.r4w-menu-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 12px;
+  font-size: 15px;
+  font-weight: 500;
+}
+
+.r4w-menu-close {
+  border: none;
+  background: transparent;
+  color: #f5f5f5;
+  font-size: 20px;
+  cursor: pointer;
+}
+
+/* LISTA EN COLUMNA, SIN APIÑAR */
+.r4w-menu-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-top: 4px;
+}
+
+.r4w-menu-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 14px;
+  border-radius: 999px;
+  background: #1b1c22;
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  font-size: 14px;
+  text-decoration: none;
+  color: #f5f5f5;
+}
+
+.r4w-menu-item:hover {
+  background: #24252d;
+}
+
+.r4w-menu-item-logout {
+  justify-content: center;
+  gap: 6px;
+  border-color: rgba(255, 153, 51, 0.8);
+}
+
 /* --- TOAST WISHES --- */
 
 /* Toast general */
@@ -2076,6 +2216,154 @@ input:focus {
     opacity: 1;
     transform: translateY(0);
   }
+}
+/* --- TOPBAR GLOBAL RUN4WISH + MENÚ OVERLAY --- */
+
+.r4w-topbar {
+  position: sticky;
+  top: 0;
+  z-index: 40;
+  width: 100%;
+  border-bottom: 1px solid #2b2b2e;
+  background: linear-gradient(90deg, #151517, #1d1d20);
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.5);
+}
+
+.r4w-topbar-inner {
+  max-width: 1040px;
+  margin: 0 auto;
+  padding: 10px 16px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+}
+
+.r4w-logo-button {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  background: transparent;
+  border: none;
+  padding: 4px;
+  cursor: pointer;
+}
+
+.r4w-logo-img {
+  width: 32px;
+  height: 32px;
+  object-fit: contain;
+}
+
+/* RUN4WISH con el 4 en naranja */
+.r4w-topbar-logo-text {
+  font-weight: 600;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  font-size: 12px;
+  color: #f5f5f5;
+}
+
+.r4w-topbar-logo-4 {
+  color: var(--r4w-orange);
+}
+
+.r4w-logo-chevron {
+  font-size: 13px;
+  color: #f5f5f5;
+  opacity: 0.8;
+  transition: transform 0.2s ease;
+}
+
+.menu-open .r4w-logo-chevron {
+  transform: rotate(180deg);
+}
+
+.r4w-topbar-right {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 4px;
+  font-size: 12px;
+}
+
+.r4w-topbar-user {
+  color: #f5f5f5;
+}
+
+/* OVERLAY DEL MENÚ */
+
+.r4w-menu-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 70;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: radial-gradient(circle at top, rgba(0, 0, 0, 0.65), #000000f0);
+}
+
+.r4w-menu-card {
+  width: 100%;
+  max-width: 420px;
+  border-radius: 20px;
+  background: #18181b;
+  border: 1px solid rgba(255, 122, 26, 0.6);
+  box-shadow: 0 18px 40px rgba(0, 0, 0, 0.8);
+  padding: 16px 16px 18px;
+}
+
+.r4w-menu-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 12px;
+}
+
+.r4w-menu-title {
+  font-size: 14px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--r4w-orange);
+}
+
+.r4w-menu-close {
+  border: none;
+  background: transparent;
+  color: #f5f5f5;
+  font-size: 18px;
+  cursor: pointer;
+}
+
+.r4w-menu-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+}
+
+.r4w-menu-btn {
+  padding: 8px 10px;
+  border-radius: 999px;
+  border: 1px solid #3a3a3d;
+  background: #232326;
+  color: #f5f5f5;
+  font-size: 13px;
+  text-align: center;
+  text-decoration: none;
+  cursor: pointer;
+  transition: background-color 0.15s ease, border-color 0.15s ease,
+    transform 0.08s ease;
+}
+
+.r4w-menu-btn:hover {
+  background-color: #2b2b2f;
+  border-color: #ff8d3a;
+  transform: translateY(-1px);
+}
+
+.r4w-menu-btn-danger {
+  border-color: rgba(255, 122, 26, 0.8);
+  color: #ffb347;
 }
 
 /* texto RUN4WISH en el centro */
@@ -2855,4 +3143,40 @@ input:focus {
   color: var(--r4w-text-muted);
   font-size: 12px;
   cursor: pointer;
+}
+
+/* --- Topbar centrada --- */
+.r4w-topnav {
+  position: sticky;
+  top: 0;
+  z-index: 40;
+  background: radial-gradient(circle at top left, #1a1a1a 0, #000 60%);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+}
+
+.r4w-topnav-inner {
+  max-width: 960px;
+  margin: 0 auto;
+  padding: 8px 16px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+@media (min-width: 768px) {
+  .r4w-topnav-inner {
+    padding-inline: 32px;
+  }
+}
+
+/* --- Ajuste de espacio en la pantalla de wishes --- */
+.r4w-wishes-page {
+  min-height: 100vh;
+  padding: 12px 16px 32px; /* antes tendrías más padding-top */
+  background: #050507;
+}
+
+.r4w-wishes-layout {
+  max-width: 960px;
+  margin: 24px auto 0; /* reduce distancia con la cabecera */
 }

@@ -17,6 +17,19 @@ const STORAGE_KEY = "r4w_user";
 export function useUser() {
   const [user, setUserState] = useState<R4WUser | null>(null);
   const [isReady, setIsReady] = useState(false);
+  const logout = () => {
+    // Limpia el perfil guardado del usuario en localStorage (ajusta la clave si es otra)
+    if (typeof window !== "undefined") {
+      window.localStorage.removeItem("r4w_user");
+      window.localStorage.removeItem("r4w_profile");
+    }
+  
+    // Borra el usuario de memoria
+    setUser(null);
+  
+    // Llévale a la portada o a la pantalla de acceso
+    window.location.href = "/";
+  };
 
   // cargar del localStorage
   useEffect(() => {
@@ -48,9 +61,7 @@ export function useUser() {
     }
   };
 
-  const logout = () => setUser(null);
-
-  return { user, setUser, logout, isReady };
+  return { user, setUser, logout, isReady, };
 }
 
 export function preregisterRace(raceId: string, wishesCost: number) {
