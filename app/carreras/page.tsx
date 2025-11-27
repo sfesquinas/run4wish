@@ -192,9 +192,6 @@ export default function CarrerasPage() {
                   </div>
 
                   <div className="r4w-race-footer">
-                    <span>
-                      No te quedes sin tu plaza. Reserva con wishes desde aquí.
-                    </span>
                     <button
                       type="button"
                       className={
