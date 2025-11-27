@@ -1,9 +1,8 @@
 // app/perfil/page.tsx
 "use client";
 
-import { useState, useEffect } from "react";
+import { useEffect, useState } from "react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
 import { useUser } from "../hooks/useUser";
 
 const initialAvatars = [
@@ -17,42 +16,82 @@ const initialAvatars = [
   { id: "a8", emoji: "🌍", unlocked: false },
 ];
 
-const COUNTRIES = [
-  "España",
-  "Portugal",
-  "Francia",
-  "Italia",
-  "Alemania",
-  "México",
-  "Argentina",
-  "Colombia",
-  "Chile",
-  "Perú",
-  "Otro",
-];
+type StoredProfile = {
+  username: string;
+  country: string;
+  soundOn: boolean;
+  vibrationOn: boolean;
+  avatarId: string;
+};
 
 export default function PerfilPage() {
-  const router = useRouter();
-  const { user, logout, isReady } = useUser();
-  const [country, setCountry] = useState("España");
+  const { user, isReady } = useUser();
+
   const [username, setUsername] = useState("Runner_You");
+  const [country, setCountry] = useState("España");
   const [soundOn, setSoundOn] = useState(true);
   const [vibrationOn, setVibrationOn] = useState(true);
   const [selectedAvatar, setSelectedAvatar] = useState<string>("a1");
+  const [saving, setSaving] = useState(false);
 
-
-  // cuando haya usuario, usamos su país como valor inicial
+  // Cargar datos del perfil guardado o, si no hay, datos del usuario
   useEffect(() => {
-    if (user?.country) {
-      setCountry(user.country);
+    if (!isReady) return;
+    if (typeof window === "undefined") return;
+
+    try {
+      const raw = window.localStorage.getItem("r4w_profile");
+      if (raw) {
+        const p = JSON.parse(raw) as Partial<StoredProfile>;
+        if (p.username) setUsername(p.username);
+        if (p.country) setCountry(p.country);
+        if (typeof p.soundOn === "boolean") setSoundOn(p.soundOn);
+        if (typeof p.vibrationOn === "boolean")
+          setVibrationOn(p.vibrationOn);
+        if (p.avatarId) setSelectedAvatar(p.avatarId);
+        return;
+      }
+
+      // Si no había perfil guardado, usamos algunos datos del user
+      if (user?.country) {
+        setCountry(user.country);
+      }
+      if ((user as any).avatarId) {
+        setSelectedAvatar((user as any).avatarId as string);
+      }
+    } catch {
+      // silencioso
     }
-  }, [user]);
+  }, [isReady, user]);
 
   const handleShare = () => {
-    // En el futuro aquí conectaremos el link real + wishes
     alert(
       "En la versión final podrás compartir tu link de invitación y ganar wishes cuando tus amigos se unan."
     );
+  };
+
+  const handleSave = () => {
+    if (typeof window === "undefined") return;
+
+    setSaving(true);
+    try {
+      const profileToStore: StoredProfile = {
+        username,
+        country,
+        soundOn,
+        vibrationOn,
+        avatarId: selectedAvatar,
+      };
+
+      window.localStorage.setItem(
+        "r4w_profile",
+        JSON.stringify(profileToStore)
+      );
+
+      alert("Perfil actualizado ✔️");
+    } finally {
+      setSaving(false);
+    }
   };
 
   if (!isReady) {
@@ -67,75 +106,23 @@ export default function PerfilPage() {
     );
   }
 
-  // si no hay usuario registrado, invitamos a registro
-  if (!user) {
-    return (
-      <main className="r4w-question-page">
-        <section className="r4w-question-layout">
-          <div className="r4w-question-card-standalone">
-            <div className="r4w-question-status">Perfil no disponible</div>
-            <h1 className="r4w-question-title" style={{ marginBottom: 8 }}>
-              Aún no te has registrado
-            </h1>
-            <p className="r4w-question-subtitle">
-              Para poder guardar tu progreso real en Run4Wish, necesitamos que
-              te registres con tu email y confirmes que eres mayor de edad.
-            </p>
-
-            <Link
-              href="/registro"
-              className="r4w-primary-btn"
-              style={{ marginTop: 16, display: "inline-flex" }}
-            >
-              Ir a registro
-              <span>➜</span>
-            </Link>
-          </div>
-        </section>
-      </main>
-    );
-  }
-
-  const age = new Date().getFullYear() - user.birthYear;
-
   return (
     <main className="r4w-profile-page">
       <section className="r4w-profile-layout">
-        {/* COLUMNA IZQUIERDA: info cuenta + ajustes */}
+        {/* COLUMNA IZQUIERDA: datos básicos + toggles + avatares */}
         <div>
           <h1 className="r4w-profile-main-title">Tu perfil Run4Wish</h1>
           <p className="r4w-profile-subtitle">
-            Aquí verás tus datos de cuenta y podrás ajustar tu experiencia:
-            nombre, país, sonido y avatar con el que compites.
+            Ajusta tu nombre de usuario, país, sonido y el avatar con el que
+            compites en cada carrera.
           </p>
 
-          {/* Info de cuenta (usuario registrado) */}
-          <div style={{ marginTop: 12, marginBottom: 16 }}>
-            <div className="r4w-profile-row">
-              <span className="r4w-profile-label">Email</span>
-              <span className="r4w-profile-value">{user.email}</span>
-            </div>
-            <div className="r4w-profile-row">
-              <span className="r4w-profile-label">Edad aprox.</span>
-              <span className="r4w-profile-value">{age} años</span>
-            </div>
-            <div className="r4w-profile-row">
-              <span className="r4w-profile-label">País (cuenta)</span>
-              <span className="r4w-profile-value">{user.country}</span>
-            </div>
-            <div className="r4w-profile-row">
-              <span className="r4w-profile-label">Estado de cuenta</span>
-              <span className="r4w-profile-value">
-                {user.verified ? "Verificada ✅" : "Pendiente de verificar ✉️"}
-              </span>
-            </div>
-          </div>
-
-          {/* Ajustes de juego */}
           <div className="r4w-profile-form">
-            {/* Nombre usuario */}
+            {/* Nombre usuario (juego) */}
             <div>
-              <div className="r4w-profile-label">Nombre de usuario (juego)</div>
+              <div className="r4w-profile-label">
+                Nombre de usuario (juego)
+              </div>
               <input
                 className="r4w-profile-input"
                 type="text"
@@ -145,18 +132,20 @@ export default function PerfilPage() {
               />
             </div>
 
+            {/* País */}
             <div>
-              <div className="r4w-profile-label">País (visible en carreras)</div>
+              <div className="r4w-profile-label">País</div>
               <select
                 className="r4w-profile-select"
                 value={country}
                 onChange={(e) => setCountry(e.target.value)}
               >
-                {COUNTRIES.map((c) => (
-                  <option key={c} value={c}>
-                    {c}
-                  </option>
-                ))}
+                <option value="España">España</option>
+                <option value="Portugal">Portugal</option>
+                <option value="Francia">Francia</option>
+                <option value="Italia">Italia</option>
+                <option value="Alemania">Alemania</option>
+                <option value="Otro">Otro</option>
               </select>
             </div>
 
@@ -164,7 +153,9 @@ export default function PerfilPage() {
             <div className="r4w-toggle-row">
               <div className="r4w-toggle-label">
                 <span>Sonido</span>
-                <span>Activar efectos cuando respondes o subes de posición.</span>
+                <span>
+                  Activar efectos cuando respondes o subes de posición.
+                </span>
               </div>
               <button
                 type="button"
@@ -227,14 +218,24 @@ export default function PerfilPage() {
                   color: "var(--r4w-text-muted)",
                 }}
               >
-                Tienes 3 avatares desbloqueados. El resto se irán desbloqueando
-                según tu constancia y logros en las carreras.
+                Tienes 3 avatares desbloqueados. El resto se irán
+                desbloqueando según tu constancia y logros en las carreras.
               </div>
             </div>
+
+            {/* Botón guardar */}
+            <button
+              type="button"
+              className="r4w-primary-btn"
+              onClick={handleSave}
+              disabled={saving}
+            >
+              {saving ? "Guardando..." : "Guardar cambios"}
+            </button>
           </div>
         </div>
 
-        {/* COLUMNA DERECHA: compartir + navegación + logout */}
+        {/* COLUMNA DERECHA: compartir + navegación */}
         <aside>
           <h2 className="r4w-profile-side-title">
             Comparte Run4Wish con tus amigos
@@ -258,7 +259,7 @@ export default function PerfilPage() {
             aquí, sin complicaciones.
           </p>
 
-          <div style={{ marginTop: 16, display: "flex", gap: 8, flexWrap: "wrap" }}>
+          <div style={{ marginTop: 16, display: "flex", gap: 8 }}>
             <Link href="/panel" className="r4w-secondary-btn">
               Volver a mi panel
               <span>📊</span>
@@ -267,17 +268,6 @@ export default function PerfilPage() {
               Ir a la carrera
               <span>🏁</span>
             </Link>
-            <button
-              type="button"
-              className="r4w-secondary-btn"
-              onClick={() => {
-                logout();
-                router.push("/registro");
-              }}
-            >
-              Cerrar sesión
-              <span>🚪</span>
-            </button>
           </div>
         </aside>
       </section>
