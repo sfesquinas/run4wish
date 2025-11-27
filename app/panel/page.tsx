@@ -16,6 +16,12 @@ export default function PanelPage() {
 
   // qué mensaje flotante está abierto
   const [openMessage, setOpenMessage] = useState<MessageKey | null>(null);
+  const [localPreregCount, setLocalPreregCount] = useState<number | null>(null);
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const stored = window.localStorage.getItem("r4w_prereg_count");
+    if (stored) setLocalPreregCount(Number(stored));
+  }, []);
 
   const handleOpenMessage = (key: MessageKey) => {
     setOpenMessage(key);

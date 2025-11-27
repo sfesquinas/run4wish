@@ -3,6 +3,7 @@
 
 import Link from "next/link";
 import { useWishes } from "../hooks/useWishes";
+import { useState } from "react";
 
 const PACKS = [
   { id: "p1", amount: 1, label: "+1 wish", note: "Un intento extra" },
@@ -12,12 +13,20 @@ const PACKS = [
 
 export default function WishesPage() {
   const { wishes, setWishes, resetWishes } = useWishes();
+  const [localWishes, setLocalWishes] = useState<number>(wishes ?? 0);
+
+  const [wishNotice, setWishNotice] = useState<string | null>(null);
 
   const handleAdd = (amount: number) => {
-    setWishes((prev) => prev + amount);
-    alert(
-      `Demo: has añadido ${amount} wish(es). En la versión real aquí iría el pago.`
-    );
+    const next = localWishes + amount;
+    setLocalWishes(next);
+    setWishes(next);
+
+    // Aviso bonito (sustituye al alert feo)
+    setWishNotice(`Has añadido ${amount} wish(es). Ya tienes ${next} wishes ✨`);
+
+    // Cerrar aviso automáticamente
+    setTimeout(() => setWishNotice(null), 3000);
   };
 
   return (
@@ -73,6 +82,22 @@ export default function WishesPage() {
           </div>
         </div>
       </section>
+      {wishNotice && (
+        <div className="r4w-toast">
+          <div className="r4w-toast-card">
+            <div className="r4w-toast-title">Wishes añadidos ✨</div>
+            <p className="r4w-toast-text">{wishNotice}</p>
+
+            <button
+              type="button"
+              className="r4w-primary-btn r4w-toast-btn"
+              onClick={() => setWishNotice(null)}
+            >
+              Seguir jugando 🚀
+            </button>
+          </div>
+        </div>
+      )}
     </main>
   );
 }

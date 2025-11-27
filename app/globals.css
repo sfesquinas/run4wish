@@ -2025,6 +2025,59 @@ input:focus {
   box-shadow: none;
 }
 
+/* --- TOAST WISHES --- */
+
+/* Toast general */
+.r4w-toast {
+  position: fixed;
+  bottom: 24px;
+  left: 0;
+  right: 0;
+  display: flex;
+  justify-content: center;
+  z-index: 9999;
+}
+
+.r4w-toast-card {
+  background: #1d1d1d;
+  border: 1px solid rgba(255, 136, 0, 0.4);
+  border-radius: 16px;
+  padding: 20px 22px;
+  width: 90%;
+  max-width: 380px;
+  text-align: center;
+  box-shadow: 0 0 24px rgba(255, 136, 0, 0.14);
+  animation: fadeUp 0.3s ease-out;
+}
+
+.r4w-toast-title {
+  font-size: 17px;
+  font-weight: 600;
+  margin-bottom: 8px;
+  color: #ffaa44;
+}
+
+.r4w-toast-text {
+  font-size: 14px;
+  margin-bottom: 16px;
+  color: #eee;
+}
+
+.r4w-toast-btn {
+  width: 100%;
+}
+
+@keyframes fadeUp {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
 /* texto RUN4WISH en el centro */
 
 .r4w-topbar-title {

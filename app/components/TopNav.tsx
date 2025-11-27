@@ -2,132 +2,132 @@
 "use client";
 
 import { useState } from "react";
+import Image from "next/image";
 import { useRouter, usePathname } from "next/navigation";
 import { useUser } from "../hooks/useUser";
 
-type NavItem = {
-  id: string;
-  label: string;
-  href: string;
-  icon: string;
-};
-
-const NAV_ITEMS: NavItem[] = [
-  { id: "panel", label: "Mi panel", href: "/panel", icon: "📊" },
-  { id: "carreras", label: "Carreras", href: "/carreras", icon: "🏁" },
-  { id: "pregunta", label: "Pregunta del día", href: "/pregunta", icon: "❓" },
-  { id: "ranking", label: "Ranking", href: "/ranking", icon: "📈" },
-  { id: "wishes", label: "Wishes", href: "/wishes", icon: "💫" },
-  { id: "perfil", label: "Perfil", href: "/perfil", icon: "👤" },
-  { id: "registro", label: "Registro / acceso", href: "/registro", icon: "🔐" },
+const MENU_ITEMS = [
+  { id: "panel", label: "Mi panel", href: "/panel" },
+  { id: "carreras", label: "Carreras", href: "/carreras" },
+  { id: "pregunta", label: "Pregunta del día", href: "/pregunta" },
+  { id: "ranking", label: "Ranking", href: "/ranking" },
+  { id: "wishes", label: "Tienda de wishes", href: "/wishes" },
 ];
 
 export function TopNav() {
-  const [open, setOpen] = useState(false);
   const router = useRouter();
   const pathname = usePathname();
-
-  // 👇 Cast a any para que no se queje por username_game / username
-  const { user, isReady } = useUser() as any;
+  const { user, isReady, wishes, logout } = useUser() as any;
+  const [menuOpen, setMenuOpen] = useState(false);
 
   const displayName =
     user?.username_game ?? user?.username ?? user?.email ?? "Runner";
 
   const handleNav = (href: string) => {
-    setOpen(false);
-
-    // Solo redirigimos a registro si ya sabemos que NO hay usuario
-    if (isReady && !user && href !== "/registro") {
-      router.push("/registro");
-      return;
-    }
-
+    setMenuOpen(false);
     router.push(href);
+  };
+
+  const handleLogout = () => {
+    setMenuOpen(false);
+    if (logout) logout();
   };
 
   return (
     <>
-      {/* TOPBAR FIJA */}
+      {/* TOPBAR */}
       <header className="r4w-topbar">
         <div className="r4w-topbar-inner">
-          {/* Botón logo → overlay */}
+          {/* Botón logo + menú */}
           <button
             type="button"
             className="r4w-logo-btn"
-            onClick={() => setOpen(true)}
+            onClick={() => setMenuOpen(true)}
           >
-            <img
+            <Image
               src="/r4w-icon.png"
               alt="Run4Wish"
-              className="r4w-logo-img"
+              width={32}
+              height={32}
+              className="r4w-logo-img r4w-logo-pulse"
             />
+            <span className="r4w-logo-chevron">▾</span>
           </button>
 
-          {/* RUN4WISH con 4 naranja */}
+          {/* Título RUN4WISH con el 4 en naranja */}
           <div className="r4w-topbar-title">
-            <span className="r4w-topbar-run">RUN</span>
-            <span className="r4w-topbar-four">4</span>
-            <span className="r4w-topbar-wish">WISH</span>
+            RUN<span className="r4w-topbar-title-4">4</span>WISH
           </div>
 
-          {/* saludo derecha */}
-          <div className="r4w-topbar-right">
-            {user && (
-              <span className="r4w-topbar-hello">Hola, {displayName}</span>
+          {/* Bloque usuario a la derecha */}
+          <div className="r4w-topbar-user">
+            {isReady && user ? (
+              <>
+                <div className="r4w-topbar-user-name">Hola, {displayName}</div>
+                <div className="r4w-topbar-user-meta">
+                  <span>Wishes: {wishes ?? 0}</span>
+                  <button
+                    type="button"
+                    className="r4w-topbar-user-logout"
+                    onClick={handleLogout}
+                  >
+                    Cerrar sesión
+                  </button>
+                </div>
+              </>
+            ) : (
+              <button
+                type="button"
+                className="r4w-topbar-user-login"
+                onClick={() => router.push("/registro")}
+              >
+                Accede / Regístrate
+              </button>
             )}
           </div>
         </div>
       </header>
 
-      {/* OVERLAY DE NAVEGACIÓN */}
-      {open && (
-        <div
-          className="r4w-nav-overlay"
-          onClick={() => setOpen(false)}
-        >
-          <div
-            className="r4w-nav-sheet"
-            onClick={(e) => e.stopPropagation()}
-          >
-            <div className="r4w-nav-sheet-header">
-              <div className="r4w-nav-sheet-title">Elige dónde ir</div>
-              {user ? (
-                <div className="r4w-nav-sheet-sub">
-                  Estás conectado como <strong>{displayName}</strong>
-                </div>
-              ) : (
-                <div className="r4w-nav-sheet-sub">
-                  Crea tu acceso para guardar tu posición en las carreras.
-                </div>
-              )}
+      {/* OVERLAY DE MENÚ */}
+      {menuOpen && (
+        <div className="r4w-nav-overlay">
+          <div className="r4w-nav-card">
+            <div className="r4w-nav-header">
+              <span className="r4w-nav-title">Menú Run4Wish</span>
+              <button
+                type="button"
+                className="r4w-nav-close"
+                onClick={() => setMenuOpen(false)}
+              >
+                ✕
+              </button>
             </div>
 
-            <div className="r4w-nav-sheet-buttons">
-              {NAV_ITEMS.map((item) => {
+            <div className="r4w-nav-list">
+              {MENU_ITEMS.map((item) => {
                 const active = pathname?.startsWith(item.href);
                 return (
                   <button
                     key={item.id}
                     type="button"
-                    className={
-                      "r4w-nav-sheet-btn" + (active ? " active" : "")
-                    }
+                    className={`r4w-nav-button ${active ? "active" : ""}`}
                     onClick={() => handleNav(item.href)}
                   >
-                    <span>{item.icon}</span>
-                    <span>{item.label}</span>
+                    {item.label}
                   </button>
                 );
               })}
-            </div>
 
-            <button
-              type="button"
-              className="r4w-nav-sheet-close"
-              onClick={() => setOpen(false)}
-            >
-              Cerrar menú ✨
-            </button>
+              {user && (
+                <button
+                  type="button"
+                  className="r4w-nav-button r4w-nav-logout"
+                  onClick={handleLogout}
+                >
+                  Cerrar sesión 🔒
+                </button>
+              )}
+            </div>
           </div>
         </div>
       )}

@@ -33,6 +33,8 @@ export default function PerfilPage() {
   const [vibrationOn, setVibrationOn] = useState(true);
   const [selectedAvatar, setSelectedAvatar] = useState<string>("a1");
   const [saving, setSaving] = useState(false);
+    // Aviso suave al guardar el perfil
+    const [profileNotice, setProfileNotice] = useState<string | null>(null);
 
   // Cargar datos del perfil guardado o, si no hay, datos del usuario
   useEffect(() => {
@@ -88,7 +90,9 @@ export default function PerfilPage() {
         JSON.stringify(profileToStore)
       );
 
-      alert("Perfil actualizado ✔️");
+      // aviso bonito
+      setProfileNotice("Perfil actualizado ✔️");
+      setTimeout(() => setProfileNotice(null), 2500);
     } finally {
       setSaving(false);
     }
@@ -271,6 +275,23 @@ export default function PerfilPage() {
           </div>
         </aside>
       </section>
+    
+      {profileNotice && (
+        <div className="r4w-toast">
+          <div className="r4w-toast-card">
+            <div className="r4w-toast-title">Perfil actualizado ✔️</div>
+            <p className="r4w-toast-text">{profileNotice}</p>
+
+            <button
+              type="button"
+              className="r4w-primary-btn r4w-toast-btn"
+              onClick={() => setProfileNotice(null)}
+            >
+              Seguir jugando 🚀
+            </button>
+          </div>
+        </div>
+      )}
     </main>
   );
 }
