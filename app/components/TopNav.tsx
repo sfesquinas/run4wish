@@ -1,3 +1,4 @@
+// app/components/TopNav.tsx
 "use client";
 
 import { useState } from "react";
@@ -5,11 +6,10 @@ import { useRouter, usePathname } from "next/navigation";
 import { useUser } from "../hooks/useUser";
 
 const MENU_ITEMS = [
-  { id: "panel", label: "Mi panel", href: "/panel" },
   { id: "carreras", label: "Carreras", href: "/carreras" },
+  { id: "panel", label: "Mi panel", href: "/panel" },
   { id: "pregunta", label: "Pregunta del día", href: "/pregunta" },
   { id: "ranking", label: "Ranking", href: "/ranking" },
-  { id: "wishes", label: "Comprar wishes", href: "/wishes" },
   { id: "perfil", label: "Perfil", href: "/perfil" },
 ];
 
@@ -19,24 +19,25 @@ export function TopNav() {
   const pathname = usePathname();
   const { user, isReady } = useUser() as any;
 
-  const displayName =
-    user?.username_game ?? user?.username ?? user?.email ?? "Runner";
-
   const handleNav = (href: string) => {
     setOpen(false);
 
-    // si no está logueado → registro
-    if (!isReady || !user) {
+    // 🧠 Solo forzamos /registro cuando YA sabemos que no hay usuario
+    if (isReady && !user) {
       router.push("/registro");
       return;
     }
 
+    // Si aún está cargando o ya hay usuario, navegamos normal
     router.push(href);
   };
 
+  const displayName =
+    user?.username_game ?? user?.username ?? user?.email ?? "Runner";
+
   return (
     <header className="r4w-topbar">
-      {/* LOGO + DESPLEGABLE */}
+      {/* Botón/logo + desplegable */}
       <button
         type="button"
         className="r4w-logo-btn"
@@ -50,20 +51,14 @@ export function TopNav() {
         <span className="r4w-logo-chevron">▾</span>
       </button>
 
-      {/* TÍTULO + HOLA */}
-      <div>
-        <div className="r4w-topbar-title">
-          RUN<span style={{ color: "var(--r4w-orange)" }}>4</span>WISH
-        </div>
-        {isReady && user && (
-          <div className="r4w-topbar-subtitle">Hola, {displayName}</div>
-        )}
+      <div className="r4w-topbar-title">
+        RUN<span style={{ color: "#FF7A1A" }}>4</span>WISH
       </div>
 
-      {/* espaciador derecha */}
-      <div style={{ width: 32 }} />
+      <div style={{ fontSize: 11 }}>
+        {user ? `Hola, ${displayName}` : "Invitado"}
+      </div>
 
-      {/* MENÚ DESPLEGABLE */}
       {open && (
         <div className="r4w-nav-dropdown">
           {MENU_ITEMS.map((item) => {
@@ -72,9 +67,9 @@ export function TopNav() {
               <button
                 key={item.id}
                 type="button"
-                className={
-                  "r4w-nav-item" + (active ? " active" : "")
-                }
+                className={["r4w-nav-item", active ? "active" : ""]
+                  .filter(Boolean)
+                  .join(" ")}
                 onClick={() => handleNav(item.href)}
               >
                 {item.label}
@@ -82,6 +77,7 @@ export function TopNav() {
             );
           })}
 
+          {/* Opción específica para registro/acceso */}
           <button
             type="button"
             className="r4w-nav-item"

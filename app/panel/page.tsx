@@ -11,12 +11,10 @@ import { useRaceProgress } from "../hooks/useRaceProgress";
 type MessageKey = "today" | "nextMove" | "nextRaces" | "fullRanking";
 
 export default function PanelPage() {
-  const { user, isReady } = useUser() as any;
-  const { activeRace, preregistrations = [] } = useRaceProgress(
-    "r7",
-    user?.id ?? null
-  ) as any;
+  const { user, isReady, preregistrations = [] } = useUser() as any;
+  const { activeRace } = useRaceProgress("r7", 7) as any;
 
+  // qué mensaje flotante está abierto
   const [openMessage, setOpenMessage] = useState<MessageKey | null>(null);
 
   const handleOpenMessage = (key: MessageKey) => {
@@ -33,11 +31,11 @@ export default function PanelPage() {
     if (typeof window === "undefined") return;
 
     confetti({
-      particleCount: 40,
-      spread: 55,
+      particleCount: 50,
+      spread: 60,
       origin: { y: 0.2 },
       scalar: 0.6,
-      ticks: 100,
+      ticks: 120,
     });
   }, [openMessage]);
 
@@ -104,6 +102,7 @@ export default function PanelPage() {
               </div>
             </header>
 
+            {/* Lista de carreras activas (demo) */}
             {activeRace ? (
               <div className="r4w-panel-racelist">
                 <div className="r4w-panel-racecard">
@@ -115,7 +114,6 @@ export default function PanelPage() {
                       Posición #{activeRace.position ?? 12}
                     </div>
                   </div>
-
                   <div className="r4w-panel-race-meta">
                     <span>
                       <span className="r4w-dot" />
@@ -123,7 +121,6 @@ export default function PanelPage() {
                       {activeRace.daysTotal ?? 7}
                     </span>
                   </div>
-
                   <div className="r4w-panel-race-footer">
                     <span>Responde la pregunta de hoy para seguir sumando.</span>
                     <Link
@@ -149,7 +146,7 @@ export default function PanelPage() {
             )}
           </section>
 
-          {/* COLUMNA DERECHA: botones de mensajes */}
+          {/* COLUMNA DERECHA: mensajes + siguiente movimiento */}
           <section className="r4w-panel-side">
             <h2 className="r4w-panel-side-title">Mensajes Run4Wish</h2>
             <p className="r4w-panel-quote">
@@ -198,7 +195,7 @@ export default function PanelPage() {
         </div>
       </main>
 
-      {/* OVERLAY FLOTANTE SEGÚN MENSAJE */}
+      {/* OVERLAY FLOTANTE DE MENSAJES */}
       {openMessage && (
         <div className="r4w-info-overlay">
           <div className="r4w-info-card">
@@ -210,7 +207,7 @@ export default function PanelPage() {
               {openMessage === "fullRanking" && "Ranking completo"}
             </div>
 
-            {/* Contenidos */}
+            {/* Contenidos por tipo */}
             {openMessage === "today" && (
               <>
                 <h3 className="r4w-info-title">
@@ -285,31 +282,18 @@ export default function PanelPage() {
 
             {openMessage === "fullRanking" && (
               <>
-                <h3 className="r4w-info-title">Consulta tu ranking</h3>
+                <h3 className="r4w-info-title">Ranking completo</h3>
                 <p className="r4w-info-text">
-                  En el ranking completo podrás ver tu posición frente al resto
-                  de participantes y cuántas posiciones has avanzado.
+                  En el ranking completo verás cómo se mueve tu posición día a
+                  día respecto al resto de runners.
                 </p>
-                <p className="r4w-info-text">
-                  Úsalo como referencia, pero recuerda: lo importante es aparecer
-                  cada día, no compararte todo el tiempo.
-                </p>
-                <div className="r4w-info-actions">
-                  <Link
-                    href="/ranking"
-                    className="r4w-primary-btn"
-                    onClick={handleCloseMessage}
-                  >
-                    Ver ranking ahora 📈
-                  </Link>
-                  <button
-                    type="button"
-                    className="r4w-secondary-btn"
-                    onClick={handleCloseMessage}
-                  >
-                    Seguir en mi panel ✨
-                  </button>
-                </div>
+                <Link
+                  href="/ranking"
+                  className="r4w-primary-btn r4w-info-close-btn"
+                  onClick={handleCloseMessage}
+                >
+                  Ver mi ranking ahora 📈
+                </Link>
               </>
             )}
           </div>
