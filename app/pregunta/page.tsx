@@ -6,6 +6,7 @@ import Link from "next/link";
 import confetti from "canvas-confetti";
 import { useWishes } from "../hooks/useWishes";
 import { useRaceProgress } from "../hooks/useRaceProgress";
+import { useStreak } from "../hooks/useStreak";
 
 
 type Option = {
@@ -26,6 +27,7 @@ const OPTIONS: Option[] = [
 const CORRECT_OPTION_ID = 1;
 
 export default function PreguntaPage() {
+  const { registerCorrectAnswer } = useStreak(); // 🔥 racha
   // const { user, isReady } = useUser();
   const { wishes, setWishes, } = useWishes();
   const { answeredToday, markAnsweredToday } = useRaceProgress("r7", 7);
@@ -92,6 +94,9 @@ export default function PreguntaPage() {
       // Mensaje temporal de puestos adelantados (simulado)
       const puestosAdelantados = Math.floor(Math.random() * 8) + 3; // entre 3 y 10
 
+      // 🔥 Actualizamos la racha de días al acertar
+      registerCorrectAnswer()
+
       // Guardamos el avance para mostrarlo en el panel personal
       if (typeof window !== "undefined") {
         window.localStorage.setItem(
@@ -121,14 +126,14 @@ export default function PreguntaPage() {
   };
 
   //if (!isReady) {
-    //return (
-      //<main className="r4w-question-page">
-        //<section className="r4w-question-layout">
-          //<div className="r4w-question-card-standalone">
-          //</div>
-        //</section>
-      //</main>
-    //);
+  //return (
+  //<main className="r4w-question-page">
+  //<section className="r4w-question-layout">
+  //<div className="r4w-question-card-standalone">
+  //</div>
+  //</section>
+  //</main>
+  //);
   //}
 
   // 🔒 Si ya has respondido la pregunta de hoy, mostramos mensaje y no dejamos jugar
@@ -174,7 +179,9 @@ export default function PreguntaPage() {
             </p>
           </div>
 
-          <div className="r4w-panel-chip">Wishes disponibles: {wishes}</div>
+          <div className="r4w-panel-chip">
+            🔮 Wishes disponibles: <strong>{wishes}</strong>
+          </div>
         </header>
 
         {/* Card de pregunta */}

@@ -88,59 +88,86 @@ export default function PanelPage() {
           <section className="r4w-panel-main">
             <header className="r4w-panel-header">
               <div>
-                <div className="r4w-panel-hello">Hola, {displayName} 👋</div>
                 <h1 className="r4w-panel-title">
-                  Esta es tu posición en Run4Wish
+                  Esta es tu posición en Run4Wish <span aria-hidden></span>
                 </h1>
                 <p className="r4w-panel-tagline">
-                  Aquí gana quien aparece cada día. La constancia pesa más que
-                  la suerte.
+                  Aquí gana quien aparece cada día. La constancia pesa más que la suerte.
                 </p>
               </div>
 
-              <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-                <div className="r4w-panel-chip">
-                  Carreras activas: {activeRace ? 1 : 0}
-                </div>
+              <div
+                style={{
+                  display: "flex",
+                  flexDirection: "column",
+                  gap: 8,
+                  alignItems: "flex-end",
+                }}
+              >
                 <Link href="/perfil" className="r4w-secondary-btn">
                   Editar perfil <span>⚙️</span>
                 </Link>
               </div>
             </header>
 
+            {/* ejemplo de lista de carreras activas */}
+
             {/* Lista de carreras activas (demo) */}
+            {/* ejemplo de lista de carreras activas */}
             {activeRace ? (
               <div className="r4w-panel-racelist">
-                <div className="r4w-panel-racecard">
-                  <div className="r4w-panel-race-header">
-                    <div className="r4w-panel-race-name">
-                      {activeRace.name ?? "Carrera activa"}
+                {[
+                  activeRace, // en el futuro aquí habrá varias carreras activas
+                ].map((race) => {
+                  const hasAnsweredToday = Boolean(
+                    (race as any).hasAnsweredToday ?? false
+                  );
+
+                  return (
+                    <div key={race.id ?? "r7"} className="r4w-panel-racecard">
+                      <div className="r4w-panel-race-header">
+                        <div className="r4w-panel-race-name">
+                          {race.name ?? "Carrera 7 días · MVP"}
+                        </div>
+                      </div>
+
+                      <div className="r4w-panel-race-meta">
+                        <span>
+                          <span className="r4w-dot" />
+                          Días jugados: {race.daysPlayed ?? 0}/{race.daysTotal ?? 7}
+                        </span>
+                        <span>Posición: #{race.position ?? 12}</span>
+                        <span>Participantes: {race.totalParticipants ?? 100}</span>
+                      </div>
+
+                      <div className="r4w-panel-race-footer">
+                        <span>
+                          {hasAnsweredToday
+                            ? "Ya has respondido la pregunta de hoy. Mañana seguimos."
+                            : "Tienes una pregunta pendiente hoy. Responde para seguir avanzando."}
+                        </span>
+                        <Link
+                          href={`/carrera/${race.id ?? "r7"}`}
+                          className={[
+                            "r4w-panel-race-button",
+                            hasAnsweredToday ? "done" : "pending",
+                          ]
+                            .filter(Boolean)
+                            .join(" ")}
+                        >
+                          {hasAnsweredToday
+                            ? "Pregunta ya respondida"
+                            : "Ir a la carrera"}
+                          <span>🏁</span>
+                        </Link>
+                      </div>
                     </div>
-                    <div className="r4w-panel-race-pos">
-                      Posición #{activeRace.position ?? 12}
-                    </div>
-                  </div>
-                  <div className="r4w-panel-race-meta">
-                    <span>
-                      <span className="r4w-dot" />
-                      Días jugados: {activeRace.daysPlayed ?? 0}/
-                      {activeRace.daysTotal ?? 7}
-                    </span>
-                  </div>
-                  <div className="r4w-panel-race-footer">
-                    <span>Responde la pregunta de hoy para seguir sumando.</span>
-                    <Link
-                      href={`/carrera/${activeRace.id ?? "r7"}`}
-                      className="r4w-secondary-btn"
-                    >
-                      Ir a la carrera <span>🏁</span>
-                    </Link>
-                  </div>
-                </div>
+                  );
+                })}
               </div>
             ) : (
               <div className="r4w-panel-next" style={{ marginTop: 16 }}>
-                <div className="r4w-panel-next-label">sin carrera activa</div>
+                <div className="r4w-panel-next-label">sin carreras activas</div>
                 <div className="r4w-panel-next-main">
                   Aún no tienes ninguna carrera en marcha. Entra en la sección{" "}
                   <strong>Carreras</strong> y apúntate a la próxima.

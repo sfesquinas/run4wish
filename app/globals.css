@@ -478,6 +478,42 @@ input:focus {
   color: var(--r4w-text-muted);
 }
 
+/* Botón de acceso a carrera desde el panel */
+.r4w-panel-race-button {
+  border-radius: 999px;
+  padding: 7px 14px;
+  font-size: 12px;
+  font-weight: 500;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  text-decoration: none;
+  border: 1px solid #505054;
+  background: #262629;
+  color: #f5f5f5;
+  transition: background-color 0.15s ease, border-color 0.15s ease,
+    transform 0.08s ease, opacity 0.15s ease;
+}
+
+/* Pregunta pendiente -> botón “encendido” */
+.r4w-panel-race-button.pending {
+  border-color: rgba(255, 122, 26, 0.7);
+  background: linear-gradient(135deg, #ff932f, #ff7a1a);
+  color: #0b0b0c;
+}
+
+/* Pregunta ya respondida -> botón “apagado” */
+.r4w-panel-race-button.done {
+  opacity: 0.6;
+  background: #202023;
+  border-color: #3a3a3d;
+  cursor: default;
+}
+
+.r4w-panel-race-button.pending:hover {
+  transform: translateY(-1px);
+}
+
 .r4w-upcoming-list {
   display: flex;
   flex-direction: column;
@@ -1352,6 +1388,14 @@ input:focus {
   gap: 16px;
   margin-bottom: 18px;
 }
+
+.r4w-panel-header-right {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  align-items: center;
+}
+
 
 .r4w-ranking-title-main {
   font-size: 20px;
@@ -3227,7 +3271,15 @@ input:focus {
 
 /* Chip de wishes actuales alineado con la cabecera */
 .r4w-panel-chip {
-  align-self: center;
+  padding: 4px 10px;
+  border-radius: 999px;
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.09em;
+  border: 1px solid rgba(255, 122, 26, 0.5);
+  color: var(--r4w-orange);
+  text-align: center;
+  min-width: 180px;
 }
 
 /* Packs de wishes más visuales */
