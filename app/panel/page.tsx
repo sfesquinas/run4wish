@@ -89,7 +89,7 @@ export default function PanelPage() {
             <header className="r4w-panel-header">
               <div>
                 <h1 className="r4w-panel-title">
-                  Esta es tu posición en Run4Wish <span aria-hidden></span>
+                  Tu posición en Run4Wish 📊
                 </h1>
                 <p className="r4w-panel-tagline">
                   Aquí gana quien aparece cada día. La constancia pesa más que la suerte.
@@ -105,19 +105,17 @@ export default function PanelPage() {
                 }}
               >
                 <Link href="/perfil" className="r4w-secondary-btn">
-                  Editar perfil <span>⚙️</span>
+                  Editar perfil <span>👤</span>
                 </Link>
               </div>
             </header>
-
-            {/* ejemplo de lista de carreras activas */}
 
             {/* Lista de carreras activas (demo) */}
             {/* ejemplo de lista de carreras activas */}
             {activeRace ? (
               <div className="r4w-panel-racelist">
                 {[
-                  activeRace, // en el futuro aquí habrá varias carreras activas
+                  activeRace, // en el futuro podremos tener varias carreras aquí
                 ].map((race) => {
                   const hasAnsweredToday = Boolean(
                     (race as any).hasAnsweredToday ?? false
@@ -157,7 +155,7 @@ export default function PanelPage() {
                         >
                           {hasAnsweredToday
                             ? "Pregunta ya respondida"
-                            : "Ir a la carrera"}
+                            : "Ir a la carrera"}{" "}
                           <span>🏁</span>
                         </Link>
                       </div>
@@ -167,13 +165,17 @@ export default function PanelPage() {
               </div>
             ) : (
               <div className="r4w-panel-next" style={{ marginTop: 16 }}>
-                <div className="r4w-panel-next-label">sin carreras activas</div>
+                <div className="r4w-panel-next-label">Sin carreras activas</div>
                 <div className="r4w-panel-next-main">
-                  Aún no tienes ninguna carrera en marcha. Entra en la sección{" "}
-                  <strong>Carreras</strong> y apúntate a la próxima.
+                  Aún no tienes ninguna carrera en marcha.
                 </div>
                 <div className="r4w-panel-next-time">
                   Tu constancia empieza el día que te apuntas.
+                </div>
+                <div style={{ marginTop: 12 }}>
+                  <Link href="/carreras" className="r4w-secondary-btn">
+                    Ir a carreras <span>🏁</span>
+                  </Link>
                 </div>
               </div>
             )}

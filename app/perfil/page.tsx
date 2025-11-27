@@ -3,6 +3,7 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { useUser } from "../hooks/useUser";
 
 const initialAvatars = [
@@ -26,6 +27,7 @@ type StoredProfile = {
 
 export default function PerfilPage() {
   const { user, isReady } = useUser();
+  const router = useRouter();
 
   const [username, setUsername] = useState("Runner_You");
   const [country, setCountry] = useState("España");
@@ -33,8 +35,6 @@ export default function PerfilPage() {
   const [vibrationOn, setVibrationOn] = useState(true);
   const [selectedAvatar, setSelectedAvatar] = useState<string>("a1");
   const [saving, setSaving] = useState(false);
-
-  // Aviso suave al guardar el perfil
   const [profileNotice, setProfileNotice] = useState<string | null>(null);
 
   // Cargar datos del perfil guardado o, si no hay, datos del usuario
@@ -88,11 +88,11 @@ export default function PerfilPage() {
         JSON.stringify(profileToStore)
       );
 
-      // Aviso bonito en lugar del alert nativo
-      setProfileNotice(
-        "Perfil actualizado ✔️ Tus cambios ya se han guardado en Run4Wish."
-      );
-      setTimeout(() => setProfileNotice(null), 3000);
+      setProfileNotice("Perfil actualizado ✔️");
+      setTimeout(() => {
+        setProfileNotice(null);
+        router.push("/panel");
+      }, 1500);
     } finally {
       setSaving(false);
     }
@@ -106,6 +106,14 @@ export default function PerfilPage() {
             <div className="r4w-question-status">Cargando perfil...</div>
           </div>
         </section>
+      {profileNotice && (
+        <div className="r4w-toast">
+          <div className="r4w-toast-card">
+            <div className="r4w-toast-title">Perfil guardado ✅</div>
+            <p className="r4w-toast-text">{profileNotice}</p>
+          </div>
+        </div>
+      )}
       </main>
     );
   }

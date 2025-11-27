@@ -1,7 +1,8 @@
 // app/hooks/useUser.ts
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState, useEffect } from "react";
+import { useRouter } from "next/navigation";
 
 export type R4WUser = {
   email: string;
@@ -17,16 +18,23 @@ const STORAGE_KEY = "r4w_user";
 export function useUser() {
   const [user, setUserState] = useState<R4WUser | null>(null);
   const [isReady, setIsReady] = useState(false);
+  const router = useRouter();
   const logout = () => {
     // Limpia el perfil guardado del usuario en localStorage (ajusta la clave si es otra)
     if (typeof window !== "undefined") {
       window.localStorage.removeItem("r4w_user");
       window.localStorage.removeItem("r4w_profile");
+      window.localStorage.removeItem("r4w_wishes");
+      window.localStorage.removeItem("r4w_prereg_by_user");
     }
   
     // Borra el usuario de memoria
     setUser(null);
+    setIsReady(true);
   
+    // Ir directo a la pantalla de acceso/registro
+    router.push("/registro");
+    
     // Llévale a la portada o a la pantalla de acceso
     window.location.href = "/";
   };

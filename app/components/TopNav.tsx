@@ -40,89 +40,93 @@ export default function TopNav() {
             <span className="r4w-topnav-caret">▾</span>
           </button>
 
-          {/* Parte derecha: usuario + wishes (SIEMPRE del mismo contexto) */}
-          <div className="r4w-topnav-right">
-            <div className="r4w-topnav-user">
-              Hola,&nbsp;
-              <span className="r4w-topnav-user-name">{displayName}</span>
-            </div>
-            <div className="r4w-topnav-wishes">
-              Wishes:&nbsp;<span>{wishes ?? 0}</span>
-            </div>
+         
+
+        {/* Parte derecha: usuario + wishes (SIEMPRE del mismo contexto) */}
+        <div className="r4w-topnav-right">
+          <div className="r4w-topnav-user">
+            Hola,&nbsp;
+            <span className="r4w-topnav-user-name">{displayName}</span>
+          </div>
+          <div className="r4w-topnav-wishes">
+            Wishes:&nbsp;<span>{wishes ?? 0}</span>
           </div>
         </div>
       </div>
+    </div >
 
-      {/* OVERLAY MENÚ PRINCIPAL */}
-      {menuOpen && (
-        <div className="r4w-menu-overlay">
-          <div className="r4w-menu-card">
-            <div className="r4w-menu-header">
-              <span>Menú Run4Wish</span>
-              <button
-                type="button"
-                className="r4w-menu-close"
-                onClick={() => setMenuOpen(false)}
-              >
-                ✕
-              </button>
-            </div>
+      {/* OVERLAY MENÚ PRINCIPAL */ }
+  {
+    menuOpen && (
+      <div className="r4w-menu-overlay">
+        <div className="r4w-menu-card">
+          <div className="r4w-menu-header">
+            <span>Menú Run4Wish</span>
+            <button
+              type="button"
+              className="r4w-menu-close"
+              onClick={() => setMenuOpen(false)}
+            >
+              ✕
+            </button>
+          </div>
 
-            <div className="r4w-menu-list">
-              <Link
-                href="/panel"
-                className="r4w-menu-item"
-                onClick={() => setMenuOpen(false)}
-              >
-                Mi panel
-              </Link>
+          <div className="r4w-menu-list">
+            <Link
+              href="/panel"
+              className="r4w-menu-item"
+              onClick={() => setMenuOpen(false)}
+            >
+              Mi panel
+            </Link>
 
-              <Link
-                href="/carreras"
-                className="r4w-menu-item"
-                onClick={() => setMenuOpen(false)}
-              >
-                Carreras
-              </Link>
+            <Link
+              href="/carreras"
+              className="r4w-menu-item"
+              onClick={() => setMenuOpen(false)}
+            >
+              Carreras
+            </Link>
 
-              <Link
-                href="/pregunta"
-                className="r4w-menu-item"
-                onClick={() => setMenuOpen(false)}
-              >
-                Pregunta del día
-              </Link>
+            <Link
+              href="/pregunta"
+              className="r4w-menu-item"
+              onClick={() => setMenuOpen(false)}
+            >
+              Pregunta del día
+            </Link>
 
-              <Link
-                href="/ranking"
-                className="r4w-menu-item"
-                onClick={() => setMenuOpen(false)}
-              >
-                Ranking
-              </Link>
+            <Link
+              href="/ranking"
+              className="r4w-menu-item"
+              onClick={() => setMenuOpen(false)}
+            >
+              Ranking
+            </Link>
 
-              <Link
-                href="/wishes"
-                className="r4w-menu-item"
-                onClick={() => setMenuOpen(false)}
-              >
-                Tienda de wishes
-              </Link>
+            <Link
+              href="/wishes"
+              className="r4w-menu-item"
+              onClick={() => setMenuOpen(false)}
+            >
+              Tienda de wishes
+            </Link>
 
-              <button
-                type="button"
-                className="r4w-menu-item r4w-menu-item-logout"
-                onClick={() => {
-                  setMenuOpen(false);
-                  logout();
-                }}
-              >
-                Cerrar sesión <span>🔒</span>
-              </button>
-            </div>
+            <button
+              type="button"
+              className="r4w-menu-item r4w-menu-item-logout"
+              onClick={() => {
+                setMenuOpen(false);
+                logout();
+              }}
+            >
+              Cerrar sesión <span>🔒</span>
+            </button>
           </div>
         </div>
-      )}
+      </div>
+    )
+  }
     </>
   );
 }

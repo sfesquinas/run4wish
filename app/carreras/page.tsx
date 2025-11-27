@@ -5,6 +5,7 @@ import { useState } from "react";
 import Link from "next/link";
 import { useUser } from "../hooks/useUser";
 import { useWishes } from "../hooks/useWishes";
+import { usePreregistrations } from "../hooks/usePreregistrations";
 
 // Carrera activa (MVP)
 const activeRace = {
@@ -45,7 +46,10 @@ const upcomingRaces = [
 
 export default function CarrerasPage() {
   // 1) Usuario y wishes globales
-  const { user, isReady } = useUser() as any;
+  const { user, isReady } = useUser();
+  const { preregistrations, addPreregistration } = usePreregistrations(
+    user?.email ?? null
+  );
   const { wishes, setWishes } = useWishes();
 
   // 2) Tooltip de la interrogación

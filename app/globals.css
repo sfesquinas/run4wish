@@ -158,6 +158,7 @@ input:focus {
   opacity: 0.5;
   cursor: default;
 }
+
 /* ===========================
      ONBOARDING / REGISTRO
      =========================== */
@@ -479,6 +480,7 @@ input:focus {
 }
 
 /* Botón de acceso a carrera desde el panel */
+/* Botón de acceso a carrera desde el panel */
 .r4w-panel-race-button {
   border-radius: 999px;
   padding: 7px 14px;
@@ -512,6 +514,11 @@ input:focus {
 
 .r4w-panel-race-button.pending:hover {
   transform: translateY(-1px);
+}
+
+/* acción extra en la tarjeta de “sin carreras activas” */
+.r4w-panel-next-actions {
+  margin-top: 12px;
 }
 
 .r4w-upcoming-list {
@@ -678,15 +685,20 @@ input:focus {
   color: var(--r4w-text-muted);
 }
 
+/* ... 3 líneas por encima ... */
 .r4w-panel-chip {
-  padding: 4px 10px;
+  padding: 4px 14px;
   border-radius: 999px;
-  font-size: 11px;
+  border: 1px solid var(--r4w-border-soft);
+  font-size: 12px;
   text-transform: uppercase;
-  letter-spacing: 0.09em;
-  border: 1px solid rgba(255, 122, 26, 0.5);
-  color: var(--r4w-orange);
+  letter-spacing: 0.08em;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 160px;
 }
+/* ... 3 líneas por debajo ... */
 
 /* stats */
 
@@ -2041,15 +2053,18 @@ input:focus {
 }
 
 @keyframes r4w-logo-heartbeat {
+
   0%,
   100% {
     transform: scale(1);
     box-shadow: 0 0 0 0 rgba(255, 149, 0, 0.0);
   }
+
   35% {
     transform: scale(1.04);
     box-shadow: 0 0 16px 0 rgba(255, 149, 0, 0.45);
   }
+
   60% {
     transform: scale(1.02);
     box-shadow: 0 0 10px 0 rgba(255, 149, 0, 0.25);
@@ -2087,7 +2102,8 @@ input:focus {
   align-items: center;
   gap: 8px;
   border: none;
-  background: transparent;   /* <- esto quita el rectángulo blanco */
+  background: transparent;
+  /* <- esto quita el rectángulo blanco */
   padding: 0;
   cursor: pointer;
 }
@@ -2108,7 +2124,8 @@ input:focus {
 }
 
 .r4w-topnav-4 {
-  color: #ff9c32; /* el 4 en naranja */
+  color: #ff9c32;
+  /* el 4 en naranja */
 }
 
 .r4w-topnav-caret {
@@ -2254,11 +2271,13 @@ input:focus {
     opacity: 0;
     transform: translateY(10px);
   }
+
   to {
     opacity: 1;
     transform: translateY(0);
   }
 }
+
 /* --- TOPBAR GLOBAL RUN4WISH + MENÚ OVERLAY --- */
 
 .r4w-topbar {
@@ -2884,6 +2903,7 @@ input:focus {
   color: #f5f5f5;
   opacity: 0.8;
 }
+
 /* --- TOOLTIP FLOTANTE R4W — INFO DE CARRERA --- */
 
 .r4w-race-name-row {
@@ -2910,7 +2930,7 @@ input:focus {
   position: fixed;
   inset: 0;
   z-index: 999;
-  background: rgba(0,0,0,0.65);
+  background: rgba(0, 0, 0, 0.65);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -2922,8 +2942,8 @@ input:focus {
   max-width: 360px;
   background: linear-gradient(145deg, #262629, #18181a);
   border-radius: 20px;
-  border: 1px solid rgba(255,122,26,0.6);
-  box-shadow: 0 18px 40px rgba(0,0,0,0.75);
+  border: 1px solid rgba(255, 122, 26, 0.6);
+  box-shadow: 0 18px 40px rgba(0, 0, 0, 0.75);
   padding: 22px 18px 18px;
   animation: r4w-pop-in 0.25s ease-out;
 }
@@ -2956,8 +2976,9 @@ input:focus {
 
 .r4w-tooltip-close:hover {
   transform: translateY(-1px);
-  box-shadow: 0 10px 20px rgba(255,122,26,0.45);
+  box-shadow: 0 10px 20px rgba(255, 122, 26, 0.45);
 }
+
 .r4w-race-name-row {
   display: flex;
   align-items: center;
@@ -2981,7 +3002,7 @@ input:focus {
 .r4w-tooltip-overlay {
   position: fixed;
   inset: 0;
-  background: rgba(0,0,0,0.65);
+  background: rgba(0, 0, 0, 0.65);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -2995,8 +3016,8 @@ input:focus {
   background: linear-gradient(145deg, #262629, #18181a);
   padding: 22px 18px 18px;
   border-radius: 20px;
-  border: 1px solid rgba(255,122,26,0.6);
-  box-shadow: 0 18px 40px rgba(0,0,0,0.75);
+  border: 1px solid rgba(255, 122, 26, 0.6);
+  box-shadow: 0 18px 40px rgba(0, 0, 0, 0.75);
   animation: r4w-pop-in 0.25s ease-out;
 }
 
@@ -3027,7 +3048,7 @@ input:focus {
 
 .r4w-tooltip-close:hover {
   transform: translateY(-1px);
-  box-shadow: 0 10px 20px rgba(255,122,26,0.45);
+  box-shadow: 0 10px 20px rgba(255, 122, 26, 0.45);
 }
 
 /* --- TOPBAR GLOBAL RUN4WISH (overlay nuevo) --- */
@@ -3214,18 +3235,22 @@ input:focus {
 /* --- Ajuste de espacio en la pantalla de wishes --- */
 .r4w-wishes-page {
   min-height: 100vh;
-  padding: 12px 16px 32px; /* antes tendrías más padding-top */
+  padding: 12px 16px 32px;
+  /* antes tendrías más padding-top */
   background: #050507;
 }
 
 .r4w-wishes-layout {
   max-width: 960px;
-  margin: 24px auto 0; /* reduce distancia con la cabecera */
+  margin: 24px auto 0;
+  /* reduce distancia con la cabecera */
 }
+
 /* ---------- TIENDA DE WISHES · DISEÑO LIMPIO ---------- */
 
 .r4w-wishes-page {
-  min-height: calc(100vh - 72px);      /* ocupa pantalla sin dejar “vacío” arriba */
+  min-height: calc(100vh - 72px);
+  /* ocupa pantalla sin dejar “vacío” arriba */
   display: flex;
   justify-content: center;
   align-items: flex-start;
@@ -3389,6 +3414,7 @@ input:focus {
   justify-content: center;
   font-size: 14px;
 }
+
 /* ===== TIENDA WISHES · AJUSTE VISUAL V2 ===== */
 
 /* Menos espacio entre topbar y tarjeta */
@@ -3448,13 +3474,16 @@ input:focus {
   font-size: 16px;
   font-weight: 700;
 }
+
 /* ===== BOTONES DE RECARGA EN NARANJA ===== */
 
 /* ===== BOTONES DE RECARGA EN NARANJA ===== */
 
 .r4w-wish-pack {
-  background: rgba(255, 140, 0, 0.339); /* fondo suave naranja */
-  border: 1px solid rgba(255, 140, 0, 0.35); /* borde naranja */
+  background: rgba(255, 140, 0, 0.339);
+  /* fondo suave naranja */
+  border: 1px solid rgba(255, 140, 0, 0.35);
+  /* borde naranja */
   border-radius: 14px;
   padding: 12px 10px;
   display: flex;
@@ -3464,7 +3493,8 @@ input:focus {
   color: #ffffff;
   cursor: pointer;
   transition: all 0.25s ease;
-  box-shadow: 0 0 6px rgba(255, 140, 0, 0.15); /* glow suave */
+  box-shadow: 0 0 6px rgba(255, 140, 0, 0.15);
+  /* glow suave */
 }
 
 .r4w-wish-pack:hover {
