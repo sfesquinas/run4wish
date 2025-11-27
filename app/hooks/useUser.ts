@@ -52,3 +52,26 @@ export function useUser() {
 
   return { user, setUser, logout, isReady };
 }
+
+export function preregisterRace(raceId: string, wishesCost: number) {
+  if (typeof window === "undefined") return false;
+
+  const raw = localStorage.getItem("r4w_user_data");
+  if (!raw) return false;
+
+  const data = JSON.parse(raw);
+
+  // Validación de wishes
+  if ((data.wishes ?? 0) < wishesCost) {
+    return "NO_WISHES";
+  }
+
+  // Restamos wishes
+  data.wishes = (data.wishes ?? 0) - wishesCost;
+
+  // Guardamos preregistro
+  data.preregistrations = [...(data.preregistrations ?? []), raceId];
+
+  localStorage.setItem("r4w_user_data", JSON.stringify(data));
+  return "OK";
+}
