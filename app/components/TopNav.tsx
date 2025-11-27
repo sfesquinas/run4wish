@@ -6,10 +6,11 @@ import { useRouter, usePathname } from "next/navigation";
 import { useUser } from "../hooks/useUser";
 
 const MENU_ITEMS = [
-  { id: "carreras", label: "Carreras", href: "/carreras" },
   { id: "panel", label: "Mi panel", href: "/panel" },
+  { id: "carreras", label: "Carreras", href: "/carreras" },
   { id: "pregunta", label: "Pregunta del día", href: "/pregunta" },
   { id: "ranking", label: "Ranking", href: "/ranking" },
+  { id: "wishes", label: "Wishes", href: "/wishes" }, // 🔥 vuelve wishes
   { id: "perfil", label: "Perfil", href: "/perfil" },
 ];
 
@@ -19,29 +20,29 @@ export function TopNav() {
   const pathname = usePathname();
   const { user, isReady } = useUser() as any;
 
+  const displayName =
+    user?.username_game ?? user?.username ?? user?.email ?? "Runner";
+
   const handleNav = (href: string) => {
+    // cerramos overlay
     setOpen(false);
 
-    // 🧠 Solo forzamos /registro cuando YA sabemos que no hay usuario
+    // si ya sabemos que NO hay usuario → a registro
     if (isReady && !user) {
       router.push("/registro");
       return;
     }
 
-    // Si aún está cargando o ya hay usuario, navegamos normal
     router.push(href);
   };
 
-  const displayName =
-    user?.username_game ?? user?.username ?? user?.email ?? "Runner";
-
   return (
     <header className="r4w-topbar">
-      {/* Botón/logo + desplegable */}
+      {/* Botón logo que abre el overlay */}
       <button
         type="button"
         className="r4w-logo-btn"
-        onClick={() => setOpen((v) => !v)}
+        onClick={() => setOpen(true)}
       >
         <img
           src="/r4w-icon.png"
@@ -59,35 +60,55 @@ export function TopNav() {
         {user ? `Hola, ${displayName}` : "Invitado"}
       </div>
 
+      {/* OVERLAY MENÚ */}
       {open && (
-        <div className="r4w-nav-dropdown">
-          {MENU_ITEMS.map((item) => {
-            const active = pathname?.startsWith(item.href);
-            return (
-              <button
-                key={item.id}
-                type="button"
-                className={["r4w-nav-item", active ? "active" : ""]
-                  .filter(Boolean)
-                  .join(" ")}
-                onClick={() => handleNav(item.href)}
-              >
-                {item.label}
-              </button>
-            );
-          })}
+        <div className="r4w-nav-overlay">
+          <div className="r4w-nav-card">
+            <div className="r4w-nav-card-title">Menú Run4Wish</div>
+            <div className="r4w-nav-card-user">
+              {user ? `Hola, ${displayName}` : "Estás navegando como invitado"}
+            </div>
 
-          {/* Opción específica para registro/acceso */}
-          <button
-            type="button"
-            className="r4w-nav-item"
-            onClick={() => {
-              setOpen(false);
-              router.push("/registro");
-            }}
-          >
-            Registro / acceso
-          </button>
+            <div className="r4w-nav-card-buttons">
+              {MENU_ITEMS.map((item) => {
+                const active = pathname?.startsWith(item.href);
+                return (
+                  <button
+                    key={item.id}
+                    type="button"
+                    className={[
+                      "r4w-nav-btn",
+                      active ? "active" : "",
+                    ]
+                      .filter(Boolean)
+                      .join(" ")}
+                    onClick={() => handleNav(item.href)}
+                  >
+                    {item.label}
+                  </button>
+                );
+              })}
+
+              <button
+                type="button"
+                className="r4w-nav-btn r4w-nav-btn-secondary"
+                onClick={() => {
+                  setOpen(false);
+                  router.push("/registro");
+                }}
+              >
+                Registro / acceso
+              </button>
+            </div>
+
+            <button
+              type="button"
+              className="r4w-nav-close-btn"
+              onClick={() => setOpen(false)}
+            >
+              Seguir en la carrera ✨
+            </button>
+          </div>
         </div>
       )}
     </header>
