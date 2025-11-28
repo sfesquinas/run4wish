@@ -44,7 +44,7 @@ export default function PreguntaPage() {
     useState<{ positions: number } | null>(null);
 
   const handleSubmitAnswer = async () => {
-    // si ya se respondió, no hacemos nada
+    // si ya se respondió, no hacemos nada.
     if (hasAnswered) return;
 
     setIsSubmitting(true);
