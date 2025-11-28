@@ -1,8 +1,7 @@
 // app/lib/joinRace.ts
-import { createClient } from "@/utils/supabase/client";
+import { supabase } from "./supabaseClient";
 
 export async function joinRace(email: string, raceId: string, cost: number) {
-  const supabase = createClient();
 
   // 1) Verificar si ya está inscrito
   const existing = await supabase
