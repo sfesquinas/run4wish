@@ -12,7 +12,7 @@ export default function WishesPage() {
   const { user, isReady } = useUser() as any;
   const { wishes, addWishes, loading } = useWishes(user?.id ?? null);
 
-  // 🔐 Si no hay usuario, no dejamos entrar
+  // 🔐 Si no hay usuario, no dejamos entrar.
   useEffect(() => {
     if (!isReady) return;
     if (!user) {
