@@ -1,19 +1,27 @@
 // app/carreras/page.tsx
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { useUser } from "../hooks/useUser";
 import { useWishes } from "../hooks/useWishes";
 import { usePreregistrations } from "../hooks/usePreregistrations";
 
-// Carrera activa (MVP)
+type InfoState = {
+  title: string;
+  text: string;
+} | null;
+
 const activeRace = {
   id: "r7",
   name: "Carrera 7 días · MVP",
+  duration: "7 días · 1 pregunta al día",
+  questions:
+    "La pregunta aparece en un horario aleatorio entre las 09:00 y las 00:00 (hora local).",
+  reward: "Experiencia sensorial Run4Wish",
 };
 
-// Próximas carreras
 const upcomingRaces = [
   {
     id: "u1",
@@ -22,16 +30,16 @@ const upcomingRaces = [
     questions:
       "Una pregunta cada hora desde las 10:00 hasta las 20:00. Aparecerá en un minuto aleatorio dentro de cada hora.",
     reward: "Insignias especiales + wishes extra",
-    cost: 3,
+    costWishes: 3,
   },
   {
     id: "u2",
     name: "Carrera 7 días · Constancia",
     duration: "7 días · 1 pregunta al día",
     questions:
-      "La pregunta aparece en un horario aleatorio entre las 09:00 y las 00:00.",
+      "La pregunta aparece en un horario aleatorio entre las 09:00 y las 00:00 (hora local).",
     reward: "Experiencia sensorial Run4Wish",
-    cost: 5,
+    costWishes: 5,
   },
   {
     id: "u3",
@@ -40,49 +48,51 @@ const upcomingRaces = [
     questions:
       "La pregunta aparece en un horario aleatorio entre las 09:00 y las 00:00.",
     reward: "Smartphone de última generación",
-    cost: 8,
+    costWishes: 8,
   },
 ];
 
 export default function CarrerasPage() {
-  // 1) Usuario y wishes globales
-  const { user, isReady } = useUser();
+  const router = useRouter();
+  const { user, isReady } = useUser() as any;
+  const { wishes, setWishes } = useWishes(user?.id ?? null);
   const { preregistrations, addPreregistration } = usePreregistrations(
     user?.email ?? null
   );
-  const { wishes, setWishes } = useWishes();
+  const [info, setInfo] = useState<InfoState>(null);
+  const preregSet = new Set(
+    (preregistrations ?? []).map((p: any) => p.race_id ?? p.raceId)
+  );
 
-  // 2) Tooltip de la interrogación
-  const [info, setInfo] = useState<{
-    title: string;
-    text: string;
-  } | null>(null);
+  // 🔐 Guard: si no hay usuario cuando ya hemos cargado, lo mandamos al login
+  useEffect(() => {
+    if (!isReady) return;
+    if (!user) {
+      router.replace("/login");
+    }
+  }, [isReady, user, router]);
 
-  // 3) Carreras con plaza ya reservada
-  const [reserved, setReserved] = useState<Record<string, boolean>>({});
-
-  // 4) Lógica de preregistro con wishes
-  const handlePreregister = (raceId: string, cost: number) => {
+  const handlePreregister = (raceId: string, costWishes: number) => {
     if (!user) {
       alert("Primero necesitas crear tu acceso en Run4Wish.");
       return;
     }
 
-    if (wishes < cost) {
+    if (wishes < costWishes) {
       alert("Necesitas más wishes para reservar esta plaza.");
       return;
     }
 
-    // Descontamos wishes
-    setWishes((prev: number) => prev - cost);
+    // Descontamos wishes del store global
+    setWishes((prev: number) => prev - costWishes);
 
-    // Marcamos plaza reservada en esta carrera
-    setReserved((prev) => ({
-      ...prev,
-      [raceId]: true,
-    }));
+    // Guardamos la preregistro (MVP)
+    addPreregistration(raceId);
+
+    alert("Plaza reservada. Nos vemos en la línea de salida 🏁");
   };
 
+  // Estado de carga mientras comprobamos usuario
   if (!isReady) {
     return (
       <main className="r4w-races-page">
@@ -90,6 +100,23 @@ export default function CarrerasPage() {
           <section className="r4w-races-column">
             <div className="r4w-race-card">
               <div className="r4w-race-name">Cargando carreras…</div>
+            </div>
+          </section>
+        </div>
+      </main>
+    );
+  }
+
+  // Si ya sabemos que no hay usuario pero aún no ha redirigido
+  if (!user) {
+    return (
+      <main className="r4w-races-page">
+        <div className="r4w-races-layout">
+          <section className="r4w-races-column">
+            <div className="r4w-race-card">
+              <div className="r4w-race-name">
+                Redirigiéndote a iniciar sesión…
+              </div>
             </div>
           </section>
         </div>
@@ -114,21 +141,25 @@ export default function CarrerasPage() {
           <div className="r4w-race-card">
             <div className="r4w-race-name-row">
               <span className="r4w-race-name">{activeRace.name}</span>
-
               <button
                 type="button"
                 className="r4w-info-icon"
                 onClick={() =>
                   setInfo({
                     title: activeRace.name,
-                    text:
-                      "7 días · 1 pregunta al día. " +
-                      "La pregunta aparece en un horario aleatorio entre las 09:00 y las 00:00 (hora local).",
+                    text: `${activeRace.duration}. ${activeRace.questions}`,
                   })
                 }
               >
                 ❓
               </button>
+            </div>
+
+            <div className="r4w-race-reward-row">
+              <span className="r4w-race-reward-icon">🏆</span>
+              <span className="r4w-race-reward-text">
+                {activeRace.reward}
+              </span>
             </div>
 
             <div className="r4w-race-footer">
@@ -151,37 +182,29 @@ export default function CarrerasPage() {
           <header className="r4w-races-header">
             <div>
               <h2 className="r4w-section-title">Próximas carreras</h2>
-          </div>
+            </div>
           </header>
 
           <div className="r4w-upcoming-list">
             {upcomingRaces.map((race) => {
-              const isReserved = reserved[race.id];
+              const alreadyBooked = preregSet.has(race.id);
 
               return (
                 <div key={race.id} className="r4w-race-card">
                   <div className="r4w-race-name-row">
                     <span className="r4w-race-name">{race.name}</span>
-
                     <button
                       type="button"
                       className="r4w-info-icon"
                       onClick={() =>
                         setInfo({
                           title: race.name,
-                          text:
-                            race.duration +
-                            ". " +
-                            race.questions,
+                          text: `${race.duration}. ${race.questions}`,
                         })
                       }
                     >
                       ❓
                     </button>
-                  </div>
-
-                  <div className="r4w-race-meta">
-                    <span>{race.duration}</span>
                   </div>
 
                   <div className="r4w-race-reward-row">
@@ -194,18 +217,16 @@ export default function CarrerasPage() {
                   <div className="r4w-race-footer">
                     <button
                       type="button"
-                      className={
-                        "r4w-secondary-btn" +
-                        (isReserved ? " r4w-btn-disabled" : "")
-                      }
-                      disabled={isReserved}
+                      className="r4w-secondary-btn"
+                      disabled={alreadyBooked}
                       onClick={() =>
-                        !isReserved && handlePreregister(race.id, race.cost)
+                        !alreadyBooked &&
+                        handlePreregister(race.id, race.costWishes)
                       }
                     >
-                      {isReserved
+                      {alreadyBooked
                         ? "Plaza reservada ✅"
-                        : `Reservar plaza · ${race.cost} wishes`}
+                        : `Reservar plaza · ${race.costWishes} ✨`}
                     </button>
                   </div>
                 </div>
@@ -215,7 +236,7 @@ export default function CarrerasPage() {
         </section>
       </div>
 
-      {/* OVERLAY TOOLTIP INTERROGACIÓN */}
+      {/* OVERLAY INFO ❓ */}
       {info && (
         <div className="r4w-tooltip-overlay">
           <div className="r4w-tooltip-card">

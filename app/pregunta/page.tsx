@@ -7,7 +7,7 @@ import confetti from "canvas-confetti";
 import { useWishes } from "../hooks/useWishes";
 import { useRaceProgress } from "../hooks/useRaceProgress";
 import { useStreak } from "../hooks/useStreak";
-
+import { useUser } from "../hooks/useUser";
 
 type Option = {
   id: number;
@@ -27,10 +27,12 @@ const OPTIONS: Option[] = [
 const CORRECT_OPTION_ID = 1;
 
 export default function PreguntaPage() {
-  const { registerCorrectAnswer } = useStreak(); // 🔥 racha
-  // const { user, isReady } = useUser();
-  const { wishes, setWishes, } = useWishes();
+  const { user } = useUser() as any;
+
+  const { wishes, setWishes } = useWishes(user?.id ?? null);
   const { answeredToday, markAnsweredToday } = useRaceProgress("r7", 7);
+  const { registerCorrectAnswer } = useStreak();
+
   const [attempts, setAttempts] = useState(0);
   const [selectedOption, setSelectedOption] = useState<number | null>(null);
   const [feedback, setFeedback] = useState<string | null>(null);
@@ -38,9 +40,8 @@ export default function PreguntaPage() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [hasAnsweredCorrectly, setHasAnsweredCorrectly] = useState(false);
   const [hasAnswered, setHasAnswered] = useState<boolean>(false);
-  const [celebration, setCelebration] = useState<{ positions: number } | null>(
-    null
-  );
+  const [celebration, setCelebration] =
+    useState<{ positions: number } | null>(null);
 
   const handleSubmitAnswer = async () => {
     // si ya se respondió, no hacemos nada

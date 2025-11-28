@@ -1,227 +1,211 @@
 // app/registro/page.tsx
 "use client";
 
-import { useState } from "react";
+import { useState, FormEvent } from "react";
 import { useRouter } from "next/navigation";
-import { useUser, R4WUser } from "../hooks/useUser";
+import { supabase } from "../lib/supabaseClient";
+import { useWishes } from "../hooks/useWishes";
 
-const avatars = [
-  { id: "a1", emoji: "🏃‍♀️" },
-  { id: "a2", emoji: "🏃‍♂️" },
-  { id: "a3", emoji: "🎯" },
-];
+const INITIAL_WISHES = 5;
 
-const COUNTRIES = [
-  "España",
-  "Portugal",
-  "Francia",
-  "Italia",
-  "Alemania",
-  "México",
-  "Argentina",
-  "Colombia",
-  "Chile",
-  "Perú",
-  "Otro",
-];
+function calculateAge(dateStr: string): number {
+  const today = new Date();
+  const birth = new Date(dateStr);
+  let age = today.getFullYear() - birth.getFullYear();
+  const m = today.getMonth() - birth.getMonth();
+  if (m < 0 || (m === 0 && today.getDate() < birth.getDate())) {
+    age--;
+  }
+  return age;
+}
 
 export default function RegistroPage() {
   const router = useRouter();
-  const { user, setUser } = useUser();
+  const { setWishes } = useWishes();   // 👈 NUEVO
 
+  const [username, setUsername] = useState("");
   const [email, setEmail] = useState("");
-  const [birthYear, setBirthYear] = useState("");
-  const [country, setCountry] = useState("España");
-  const [avatarId, setAvatarId] = useState("a1");
-  const [adult, setAdult] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  const [step, setStep] = useState<"form" | "email">("form");
+  const [birthdate, setBirthdate] = useState("");
+  const [password, setPassword] = useState("");
+  const [password2, setPassword2] = useState("");
+  const [loading, setLoading] = useState(false);
+  const [errorMsg, setErrorMsg] = useState<string | null>(null);
 
-  const currentYear = new Date().getFullYear();
-
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
-    setError(null);
+    setErrorMsg(null);
 
-    if (!email.includes("@")) {
-      setError("Introduce un email válido.");
+    // Validaciones básicas
+    if (!username || !email || !birthdate || !password || !password2) {
+      setErrorMsg("Por favor, rellena todos los campos.");
       return;
     }
 
-    const yearNum = parseInt(birthYear, 10);
-    if (Number.isNaN(yearNum) || yearNum < 1900 || yearNum > currentYear) {
-      setError("Introduce un año de nacimiento válido.");
+    if (password !== password2) {
+      setErrorMsg("Las contraseñas no coinciden.");
       return;
     }
 
-    const age = currentYear - yearNum;
-    if (age < 18 || !adult) {
-      setError("Run4Wish es solo para mayores de edad.");
+    const age = calculateAge(birthdate);
+    if (age < 18) {
+      setErrorMsg("Run4Wish es solo para mayores de 18 años.");
       return;
     }
 
-    // Aquí, en el futuro, enviaríamos el email con el enlace de validación.
-    // De momento, simulamos el paso de "revisa tu email".
-    const newUser: R4WUser = {
-      email: email.trim(),
-      birthYear: yearNum,
-      country: country.trim() || "—",
-      avatarId,
-      createdAt: Date.now(),
-      verified: false,
-    };
+    setLoading(true);
 
-    setUser(newUser);
-    setStep("email");
-  };
+    try {
+      // 1) Crear usuario en Supabase Auth
+      const { data, error } = await supabase.auth.signUp({
+        email,
+        password,
+        options: {
+          data: {
+            username,
+            birthdate,
+          },
+          // 👇 A dónde queremos que vuelva tras confirmar el email
+          emailRedirectTo: `${window.location.origin}/login`,
+        },
+      });
 
-  const handleConfirmEmail = () => {
-    // En la versión real esto vendría del enlace del correo
-    if (!user) {
+      if (error) {
+        console.warn("Error al crear acceso:", error);
+
+        const msg = error.message.toLowerCase();
+
+        if (msg.includes("14 seconds")) {
+          setErrorMsg(
+            "Tenemos que esperar unos segundos antes de volver a intentarlo. Prueba de nuevo en un momento."
+          );
+        } else if (msg.includes("user already registered")) {
+          setErrorMsg(
+            "Ya existe un acceso con este email. Prueba a iniciar sesión."
+          );
+        } else {
+          setErrorMsg(
+            "No se pudo crear tu acceso. Inténtalo de nuevo en unos segundos."
+          );
+        }
+
+        setLoading(false);
+        return;
+      }
+
+      // 2) Crear / actualizar perfil en la tabla profiles
+      const { error: profileError } = await supabase.from("r4w_profiles").upsert(
+        {
+          username,
+          birthdate,
+          wishes: INITIAL_WISHES,
+        },
+        { onConflict: "id" }
+      );
+
+      if (profileError) {
+        console.warn("Error guardando perfil:", profileError);
+        setErrorMsg(
+          "Tu acceso se ha creado, pero hubo un problema guardando el perfil. Inténtalo más tarde."
+        );
+        setLoading(false);
+        return;
+      }
+
+      // ✅ Sincronizar wishes en el store global
+      setWishes(INITIAL_WISHES);
+
+      // 3) Redirigir al panel
       router.push("/panel");
-      return;
+    } catch (err: any) {
+      console.error(err);
+      setErrorMsg("Ha ocurrido un error inesperado.");
+    } finally {
+      setLoading(false);
     }
-
-    const updated: R4WUser = { ...user, verified: true };
-    setUser(updated);
-    router.push("/panel");
   };
 
   return (
-    <main className="r4w-question-page">
-      <section className="r4w-question-layout">
-        <div className="r4w-question-card-standalone">
-          {step === "form" && (
-            <>
-              <div className="r4w-question-status">
-                Registro · Solo mayores de 18 años
-              </div>
-              <h1 className="r4w-question-title" style={{ marginBottom: 8 }}>
-                Crea tu acceso a Run4Wish
-              </h1>
-              <p className="r4w-question-subtitle">
-                Usaremos tu email para identificarte de forma única y tu año de
-                nacimiento para asegurarnos de que eres mayor de edad.
-              </p>
+    <main className="r4w-auth-page">
+      <section className="r4w-auth-card">
+        <h1 className="r4w-auth-title">Crea tu acceso Run4Wish</h1>
+        <p className="r4w-auth-subtitle">
+          Necesitas ser mayor de 18 años. Usaremos tu email para validar tu
+          cuenta y guardar tus wishes.
+        </p>
 
-              <form onSubmit={handleSubmit} style={{ marginTop: 14 }}>
-                <div style={{ marginBottom: 10 }}>
-                  <div className="r4w-profile-label">Email</div>
-                  <input
-                    type="email"
-                    className="r4w-profile-input"
-                    value={email}
-                    onChange={(e) => setEmail(e.target.value)}
-                    required
-                  />
-                </div>
+        <form className="r4w-auth-form" onSubmit={handleSubmit}>
+          <label className="r4w-auth-label">
+            Nombre de juego
+            <input
+              className="r4w-auth-input"
+              type="text"
+              value={username}
+              onChange={(e) => setUsername(e.target.value)}
+              maxLength={30}
+              placeholder="Ej: Runner_SAO"
+            />
+          </label>
 
-                <div style={{ marginBottom: 10 }}>
-                  <div className="r4w-profile-label">Año de nacimiento</div>
-                  <input
-                    type="number"
-                    className="r4w-profile-input"
-                    value={birthYear}
-                    onChange={(e) => setBirthYear(e.target.value)}
-                    placeholder="Ej: 1985"
-                    required
-                  />
-                </div>
+          <label className="r4w-auth-label">
+            Email
+            <input
+              className="r4w-auth-input"
+              type="email"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              placeholder="tucorreo@email.com"
+            />
+          </label>
 
-                <div className="r4w-profile-field" style={{ marginBottom: 18 }}>
-                  <label className="r4w-profile-label">País</label>
-                  <select
-                    className="r4w-profile-select"
-                    value={country}
-                    onChange={(e) => setCountry(e.target.value)}
-                  >
-                    {COUNTRIES.map((c) => (
-                      <option key={c} value={c}>
-                        {c}
-                      </option>
-                    ))}
-                  </select>
-                </div>
+          <label className="r4w-auth-label">
+            Fecha de nacimiento
+            <input
+              className="r4w-auth-input"
+              type="date"
+              value={birthdate}
+              onChange={(e) => setBirthdate(e.target.value)}
+            />
+          </label>
 
-                <div style={{ marginBottom: 10 }}>
-                  <div className="r4w-profile-label">Elige tu avatar inicial</div>
-                  <div className="r4w-avatars-grid">
-                    {avatars.map((a) => (
-                      <button
-                        key={a.id}
-                        type="button"
-                        className={
-                          "r4w-avatar-card" +
-                          (avatarId === a.id ? " selected" : "")
-                        }
-                        onClick={() => setAvatarId(a.id)}
-                      >
-                        {a.emoji}
-                      </button>
-                    ))}
-                  </div>
-                </div>
+          <label className="r4w-auth-label">
+            Contraseña
+            <input
+              className="r4w-auth-input"
+              type="password"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              minLength={6}
+            />
+          </label>
 
-                <label
-                  style={{
-                    display: "flex",
-                    alignItems: "center",
-                    gap: 8,
-                    fontSize: 12,
-                    marginTop: 10,
-                    color: "var(--r4w-text-muted)",
-                  }}
-                >
-                  <input
-                    type="checkbox"
-                    checked={adult}
-                    onChange={(e) => setAdult(e.target.checked)}
-                  />
-                  Confirmo que soy mayor de 18 años.
-                </label>
+          <label className="r4w-auth-label">
+            Repite la contraseña
+            <input
+              className="r4w-auth-input"
+              type="password"
+              value={password2}
+              onChange={(e) => setPassword2(e.target.value)}
+              minLength={6}
+            />
+          </label>
 
-                {error && (
-                  <div className="r4w-answer-feedback-error" style={{ marginTop: 10 }}>
-                    {error}
-                  </div>
-                )}
+          {errorMsg && <p className="r4w-auth-error">{errorMsg}</p>}
 
-                <button
-                  type="submit"
-                  className="r4w-primary-btn"
-                  style={{ marginTop: 14, width: "100%" }}
-                >
-                  Registrarme
-                  <span>➜</span>
-                </button>
-              </form>
-            </>
-          )}
+          <button
+            type="submit"
+            className="r4w-primary-btn"
+            disabled={loading}
+          >
+            {loading ? "Creando acceso..." : "Crear acceso y empezar 🚀"}
+          </button>
+        </form>
 
-          {step === "email" && (
-            <>
-              <div className="r4w-question-status">Revisa tu email (demo)</div>
-              <h1 className="r4w-question-title" style={{ marginBottom: 8 }}>
-                Te hemos enviado un enlace de acceso
-              </h1>
-              <p className="r4w-question-subtitle">
-                En la versión real deberás abrir el correo y confirmar tu
-                cuenta. Aquí lo simulamos: cuando pulses el botón entenderemos
-                que ya has validado tu email.
-              </p>
-
-              <button
-                type="button"
-                className="r4w-primary-btn"
-                style={{ marginTop: 16, width: "100%" }}
-                onClick={handleConfirmEmail}
-              >
-                Ya he validado mi email
-                <span>✅</span>
-              </button>
-            </>
-          )}
-        </div>
+        <p className="r4w-auth-footer">
+          ¿Ya tienes acceso?{" "}
+          <a href="/login" className="r4w-auth-link">
+            Inicia sesión aquí
+          </a>
+        </p>
       </section>
     </main>
   );

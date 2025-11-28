@@ -698,7 +698,17 @@ input:focus {
   justify-content: center;
   min-width: 160px;
 }
-/* ... 3 líneas por debajo ... */
+
+.r4w-panel-chip-center {
+  margin-top: 8px;
+}
+
+@media (max-width: 768px) {
+  .r4w-panel-chip-center {
+    display: inline-flex;
+    justify-content: center;
+  }
+}
 
 /* stats */
 
@@ -3519,4 +3529,34 @@ input:focus {
 /* Ocultamos el subtítulo */
 .r4w-wish-pack-note {
   display: none;
+}
+
+/* Botón del menú superior */
+.r4w-menu-trigger {
+  width: 25px;
+  height: 25px;
+  border-radius: 50%;
+  border: 3px solid rgba(255, 255, 255, 0.25);
+  background: #000; /* fondo negro */
+  color: #FF7A1A !important;    /* 🔥 fuerza el color naranja */
+  fill: #FF7A1A !important;     /* 🔥 por si usa SVG */
+  stroke: #FF7A1A !important;
+  font-size: 18px;
+  font-weight: bold;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  cursor: pointer;
+  transition: 0.15s ease-in-out;
+}
+
+.r4w-menu-trigger:hover {
+  background: #111;
+  border-color: rgba(255, 255, 255, 0.35);
+}
+
+.r4w-menu-trigger:active {
+  transform: scale(0.94);
 }

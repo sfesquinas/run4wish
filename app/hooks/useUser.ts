@@ -1,96 +1,111 @@
 // app/hooks/useUser.ts
 "use client";
 
-import { useState, useEffect } from "react";
-import { useRouter } from "next/navigation";
+import { useEffect, useState } from "react";
+import { supabase } from "../lib/supabaseClient";
 
-export type R4WUser = {
-  email: string;
-  birthYear: number;
-  country: string;
-  avatarId: string;
-  createdAt: number;
-  verified: boolean;
+type R4WProfile = {
+  id: string;
+  email: string | null;
+  username: string | null;
+  birthdate: string | null;
+  wishes: number | null;
 };
 
-const STORAGE_KEY = "r4w_user";
-
+// Devolvemos tipos muy abiertos (any) para no romper nada existente
 export function useUser() {
-  const [user, setUserState] = useState<R4WUser | null>(null);
-  const [isReady, setIsReady] = useState(false);
-  const router = useRouter();
-  const logout = () => {
-    // Limpia el perfil guardado del usuario en localStorage (ajusta la clave si es otra)
-    if (typeof window !== "undefined") {
-      window.localStorage.removeItem("r4w_user");
-      window.localStorage.removeItem("r4w_profile");
-      window.localStorage.removeItem("r4w_wishes");
-      window.localStorage.removeItem("r4w_prereg_by_user");
-    }
-  
-    // Borra el usuario de memoria
-    setUser(null);
-    setIsReady(true);
-  
-    // Ir directo a la pantalla de acceso/registro
-    router.push("/registro");
-    
-    // Llévale a la portada o a la pantalla de acceso
-    window.location.href = "/";
-  };
+  const [user, setUser] = useState<any | null>(null);
+  const [profile, setProfile] = useState<R4WProfile | null>(null);
+  const [wishes, setWishes] = useState<number>(0);
+  const [loading, setLoading] = useState(true);
 
-  // cargar del localStorage
+  // Por compatibilidad con código que ya usa `preregistrations`
+  const [preregistrations] = useState<any[]>([]);
+
   useEffect(() => {
-    if (typeof window === "undefined") return;
+    let isMounted = true;
 
-    try {
-      const raw = window.localStorage.getItem(STORAGE_KEY);
-      if (!raw) {
-        setIsReady(true);
-        return;
+    const fetchUserAndProfile = async () => {
+      setLoading(true);
+
+      // 1) Obtener sesión actual
+      const { data: sessionData } = await supabase.auth.getSession();
+      const currentUser = sessionData.session?.user ?? null;
+
+      if (!isMounted) return;
+
+      setUser(currentUser);
+
+      if (currentUser?.id) {
+        // 2) Cargar perfil de r4w_profiles
+        const { data: profileData, error: profileError } = await supabase
+          .from("r4w_profiles")
+          .select("*")
+          .eq("id", currentUser.id)
+          .single();
+
+        if (!isMounted) return;
+
+        if (!profileError && profileData) {
+          setProfile(profileData as R4WProfile);
+          setWishes(profileData.wishes ?? 0);
+        } else {
+          // si no hay perfil aún, lo dejamos en null
+          setProfile(null);
+          setWishes(0);
+        }
+      } else {
+        setProfile(null);
+        setWishes(0);
       }
-      const parsed = JSON.parse(raw) as R4WUser;
-      setUserState(parsed);
-    } catch {
-      // nada
-    } finally {
-      setIsReady(true);
-    }
+
+      if (isMounted) {
+        setLoading(false);
+      }
+    };
+
+    // Carga inicial
+    fetchUserAndProfile();
+
+    // 3) Escuchar cambios de sesión (login, logout, etc.)
+    const {
+      data: { subscription },
+    } = supabase.auth.onAuthStateChange((_event, session) => {
+      if (!isMounted) return;
+      const currentUser = session?.user ?? null;
+      setUser(currentUser);
+
+      if (!currentUser) {
+        setProfile(null);
+        setWishes(0);
+      } else {
+        // recargamos perfil cuando haya nuevo login
+        fetchUserAndProfile();
+      }
+    });
+
+    return () => {
+      isMounted = false;
+      subscription.unsubscribe();
+    };
   }, []);
 
-  const setUser = (next: R4WUser | null) => {
-    setUserState(next);
-    if (typeof window === "undefined") return;
-
-    if (next) {
-      window.localStorage.setItem(STORAGE_KEY, JSON.stringify(next));
-    } else {
-      window.localStorage.removeItem(STORAGE_KEY);
-    }
+  const logout = async () => {
+    await supabase.auth.signOut();
+    setUser(null);
+    setProfile(null);
+    setWishes(0);
   };
 
-  return { user, setUser, logout, isReady, };
-}
-
-export function preregisterRace(raceId: string, wishesCost: number) {
-  if (typeof window === "undefined") return false;
-
-  const raw = localStorage.getItem("r4w_user_data");
-  if (!raw) return false;
-
-  const data = JSON.parse(raw);
-
-  // Validación de wishes
-  if ((data.wishes ?? 0) < wishesCost) {
-    return "NO_WISHES";
-  }
-
-  // Restamos wishes
-  data.wishes = (data.wishes ?? 0) - wishesCost;
-
-  // Guardamos preregistro
-  data.preregistrations = [...(data.preregistrations ?? []), raceId];
-
-  localStorage.setItem("r4w_user_data", JSON.stringify(data));
-  return "OK";
+  return {
+    user,
+    profile,
+    wishes,
+    setWishes,
+    // por compatibilidad con el resto del código
+    preregistrations,
+    isReady: !loading,
+    loading,
+    logout,
+  };
 }

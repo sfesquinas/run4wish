@@ -3,33 +3,42 @@
 
 import { useState, useEffect } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import confetti from "canvas-confetti";
 
 import { useUser } from "../hooks/useUser";
-import { useRaceProgress } from "../hooks/useRaceProgress";
+import { useUserRaces } from "../hooks/useUserRaces";
 
 type MessageKey = "today" | "nextMove" | "nextRaces" | "fullRanking";
 
 export default function PanelPage() {
+  const router = useRouter();
   const { user, isReady, preregistrations = [] } = useUser() as any;
-  const { activeRace } = useRaceProgress("r7", 7) as any;
+  const { races, loading, refresh } = useUserRaces(user?.email ?? null);
+
+  // 👇 TODOS LOS HOOKS VAN AQUÍ ARRIBA, SIN IF/RETURN ENTRE MEDIAS
+  const activeRaces = races.filter((r: any) => r.status === "active");
 
   // qué mensaje flotante está abierto
   const [openMessage, setOpenMessage] = useState<MessageKey | null>(null);
+
+  // preregistros guardados en localStorage (MVP)
   const [localPreregCount, setLocalPreregCount] = useState<number | null>(null);
+
+  // Guard: si no hay usuario cuando ya hemos cargado, lo mandamos a /login
+  useEffect(() => {
+    if (!isReady) return;
+    if (!user) {
+      router.replace("/login");
+    }
+  }, [isReady, user, router]);
+
+  // Leer preregistros guardados en localStorage
   useEffect(() => {
     if (typeof window === "undefined") return;
     const stored = window.localStorage.getItem("r4w_prereg_count");
     if (stored) setLocalPreregCount(Number(stored));
   }, []);
-
-  const handleOpenMessage = (key: MessageKey) => {
-    setOpenMessage(key);
-  };
-
-  const handleCloseMessage = () => {
-    setOpenMessage(null);
-  };
 
   // mini-confeti suave al abrir cualquier mensaje
   useEffect(() => {
@@ -46,14 +55,18 @@ export default function PanelPage() {
   }, [openMessage]);
 
   const displayName =
-    user?.username_game ?? user?.username ?? user?.email ?? "Runner";
+    (user as any)?.username_game ??
+    (user as any)?.username ??
+    (user as any)?.email ??
+    "Runner";
 
+  // 🔄 ESTOS RETURNS YA VAN DESPUÉS DE TODOS LOS HOOKS
   if (!isReady) {
     return (
       <main className="r4w-panel-page">
         <section className="r4w-panel-layout">
           <div className="r4w-panel-main">
-            <div className="r4w-panel-hello">Cargando tu panel...</div>
+            <div className="r4w-panel-hello">Cargando tu panel…</div>
           </div>
         </section>
       </main>
@@ -80,6 +93,9 @@ export default function PanelPage() {
 
   const preregCount = (preregistrations ?? []).length;
 
+  const handleOpenMessage = (key: MessageKey) => setOpenMessage(key);
+  const handleCloseMessage = () => setOpenMessage(null);
+
   return (
     <>
       <main className="r4w-panel-page">
@@ -89,11 +105,17 @@ export default function PanelPage() {
             <header className="r4w-panel-header">
               <div>
                 <h1 className="r4w-panel-title">
-                  Tu posición en Run4Wish 📊
+                  Esta es tu posición en Run4Wish 📊
                 </h1>
                 <p className="r4w-panel-tagline">
-                  Aquí gana quien aparece cada día. La constancia pesa más que la suerte.
+                  Aquí gana quien aparece cada día. La constancia pesa más que
+                  la suerte.
                 </p>
+
+                {/* Contador de carreras activas */}
+                <div className="r4w-panel-chip r4w-panel-chip-center">
+                  Carreras activas: {activeRaces.length}
+                </div>
               </div>
 
               <div
@@ -110,19 +132,19 @@ export default function PanelPage() {
               </div>
             </header>
 
-            {/* Lista de carreras activas (demo) */}
-            {/* ejemplo de lista de carreras activas */}
-            {activeRace ? (
+            {/* Lista de carreras activas */}
+            {activeRaces.length > 0 ? (
               <div className="r4w-panel-racelist">
-                {[
-                  activeRace, // en el futuro podremos tener varias carreras aquí
-                ].map((race) => {
+                {activeRaces.map((race: any) => {
                   const hasAnsweredToday = Boolean(
-                    (race as any).hasAnsweredToday ?? false
+                    race.hasAnsweredToday ?? false
                   );
 
                   return (
-                    <div key={race.id ?? "r7"} className="r4w-panel-racecard">
+                    <div
+                      key={race.id ?? "r7"}
+                      className="r4w-panel-racecard"
+                    >
                       <div className="r4w-panel-race-header">
                         <div className="r4w-panel-race-name">
                           {race.name ?? "Carrera 7 días · MVP"}
@@ -132,10 +154,13 @@ export default function PanelPage() {
                       <div className="r4w-panel-race-meta">
                         <span>
                           <span className="r4w-dot" />
-                          Días jugados: {race.daysPlayed ?? 0}/{race.daysTotal ?? 7}
+                          Días jugados: {race.daysPlayed ?? 0}/
+                          {race.daysTotal ?? 7}
                         </span>
                         <span>Posición: #{race.position ?? 12}</span>
-                        <span>Participantes: {race.totalParticipants ?? 100}</span>
+                        <span>
+                          Participantes: {race.totalParticipants ?? 100}
+                        </span>
                       </div>
 
                       <div className="r4w-panel-race-footer">

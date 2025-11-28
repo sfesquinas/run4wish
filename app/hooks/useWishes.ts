@@ -1,62 +1,81 @@
 // app/hooks/useWishes.ts
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
+import { supabase } from "../lib/supabaseClient";
 
-const STORAGE_KEY = "r4w_wishes_demo";
+/**
+ * Hook de wishes REAL por usuario.
+ *
+ * - userId: id del usuario de Supabase (auth.user.id)
+ * - Si no hay userId, funciona en modo "demo" solo en memoria.
+ */
+export function useWishes(userId: string | null) {
+  const [wishes, setWishesState] = useState<number>(0);
+  const [loading, setLoading] = useState(false);
 
-// Estado global (compartido por todos los componentes)
-let wishesStore = 0;
-let initialized = false;
-let listeners: Array<(value: number) => void> = [];
+  const fetchWishes = useCallback(async () => {
+    if (!userId) {
+      // Sin usuario: dejamos el saldo en 0 (demo / no loggeado)
+      setWishesState(0);
+      return;
+    }
 
-function loadInitialWishes() {
-  if (initialized) return wishesStore;
-  initialized = true;
+    setLoading(true);
+    const { data, error } = await supabase
+      .from("r4w_profiles")
+      .select("wishes")
+      .eq("id", userId)
+      .single();
 
-  if (typeof window === "undefined") {
-    wishesStore = 0;
-    return wishesStore;
-  }
+    if (error) {
+      console.error("Error cargando wishes:", error);
+    } else if (data) {
+      setWishesState(data.wishes ?? 0);
+    }
 
-  const raw = window.localStorage.getItem(STORAGE_KEY);
-  wishesStore = raw ? Number(raw) || 0 : 0;
-  return wishesStore;
-}
+    setLoading(false);
+  }, [userId]);
 
-function updateStore(next: number) {
-  wishesStore = next;
-  if (typeof window !== "undefined") {
-    window.localStorage.setItem(STORAGE_KEY, String(next));
-  }
-  listeners.forEach((l) => l(next));
-}
-
-export function useWishes() {
-  const [wishes, setWishesState] = useState<number>(() => loadInitialWishes());
-
-  // Suscribimos este componente a los cambios globales
+  // Cargar wishes cuando tengamos userId
   useEffect(() => {
-    const listener = (value: number) => setWishesState(value);
-    listeners.push(listener);
-    return () => {
-      listeners = listeners.filter((l) => l !== listener);
-    };
-  }, []);
+    fetchWishes();
+  }, [fetchWishes]);
 
-  const setWishes = (
-    updater: number | ((prev: number) => number)
-  ): void => {
-    const next =
-      typeof updater === "function"
-        ? (updater as (p: number) => number)(wishesStore)
-        : updater;
-    updateStore(next);
+  /**
+   * setWishes recibe una función (prev => next),
+   * igual que estabas usando antes.
+   * Actualiza estado Y Supabase a la vez.
+   */
+  const setWishes = useCallback(
+    (updater: (prev: number) => number) => {
+      // Actualizamos inmediatamente en UI
+      setWishesState((prev) => {
+        const next = updater(prev);
+
+        // Si hay usuario, guardamos en Supabase (fire-and-forget)
+        if (userId) {
+          supabase
+            .from("r4w_profiles")
+            .update({ wishes: next })
+            .eq("id", userId)
+            .then(({ error }) => {
+              if (error) {
+                console.error("Error guardando wishes:", error);
+              }
+            });
+        }
+
+        return next;
+      });
+    },
+    [userId]
+  );
+
+  return {
+    wishes,
+    setWishes,
+    loading,
+    refreshWishes: fetchWishes,
   };
-
-  const resetWishes = () => {
-    updateStore(0);
-  };
-
-  return { wishes, setWishes, resetWishes };
 }
