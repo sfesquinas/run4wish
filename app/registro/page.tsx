@@ -5,6 +5,7 @@ import { useState, FormEvent } from "react";
 import { useRouter } from "next/navigation";
 import { supabase } from "../lib/supabaseClient";
 import { useWishes } from "../hooks/useWishes";
+import { useUser } from "../hooks/useUser";
 
 const INITIAL_WISHES = 5;
 
@@ -21,7 +22,10 @@ function calculateAge(dateStr: string): number {
 
 export default function RegistroPage() {
   const router = useRouter();
-  const { setWishes } = useWishes();   // 👈 NUEVO
+
+  // 👇 user puede ser null en registro, no pasa nada
+  const { user } = useUser();
+  const { setWishes } = useWishes(user?.id ?? null);
 
   const [username, setUsername] = useState("");
   const [email, setEmail] = useState("");
@@ -64,43 +68,38 @@ export default function RegistroPage() {
             username,
             birthdate,
           },
-          // 👇 A dónde queremos que vuelva tras confirmar el email
-          emailRedirectTo: `${window.location.origin}/login`,
         },
       });
 
       if (error) {
-        console.warn("Error al crear acceso:", error);
-
-        const msg = error.message.toLowerCase();
-
-        if (msg.includes("14 seconds")) {
-          setErrorMsg(
-            "Tenemos que esperar unos segundos antes de volver a intentarlo. Prueba de nuevo en un momento."
-          );
-        } else if (msg.includes("user already registered")) {
-          setErrorMsg(
-            "Ya existe un acceso con este email. Prueba a iniciar sesión."
-          );
-        } else {
-          setErrorMsg(
-            "No se pudo crear tu acceso. Inténtalo de nuevo en unos segundos."
-          );
-        }
-
+        console.error(error);
+        setErrorMsg(error.message || "No se pudo crear tu acceso.");
         setLoading(false);
         return;
       }
 
-      // 2) Crear / actualizar perfil en la tabla profiles
-      const { error: profileError } = await supabase.from("r4w_profiles").upsert(
-        {
-          username,
-          birthdate,
-          wishes: INITIAL_WISHES,
-        },
-        { onConflict: "id" }
-      );
+      const createdUser = data.user;
+      if (!createdUser) {
+        setErrorMsg(
+          "Hemos enviado un email de confirmación. Revisa tu bandeja e inténtalo de nuevo."
+        );
+        setLoading(false);
+        return;
+      }
+
+      // 2) Crear / actualizar perfil en la tabla r4w_profiles
+      const { error: profileError } = await supabase
+        .from("r4w_profiles")
+        .upsert(
+          {
+            id: createdUser.id,
+            email: createdUser.email,
+            username,
+            birthdate,
+            wishes: INITIAL_WISHES,
+          },
+          { onConflict: "id" }
+        );
 
       if (profileError) {
         console.warn("Error guardando perfil:", profileError);
@@ -111,10 +110,10 @@ export default function RegistroPage() {
         return;
       }
 
-      // ✅ Sincronizar wishes en el store global
-      setWishes(INITIAL_WISHES);
+      // 3) Sincronizar wishes iniciales en el store local
+      setWishes(() => INITIAL_WISHES);
 
-      // 3) Redirigir al panel
+      // 4) Redirigir al panel
       router.push("/panel");
     } catch (err: any) {
       console.error(err);

@@ -1,106 +1,128 @@
-// app/wishes/page.tsx
 "use client";
 
+import { useEffect } from "react";
+import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { useWishes } from "../hooks/useWishes";
-import { useState } from "react";
 
-const PACKS = [
-  { id: "p1", amount: 1, label: "+1 wish", note: "Un intento extra" },
-  { id: "p3", amount: 3, label: "+3 wishes", note: "Para días intensos" },
-  { id: "p5", amount: 5, label: "+5 wishes", note: "Modo constancia total" },
-];
+import { useUser } from "../hooks/useUser";
+import { useWishes } from "../hooks/useWishes";
 
 export default function WishesPage() {
-  const { wishes, setWishes, resetWishes } = useWishes();
-  const [localWishes, setLocalWishes] = useState<number>(wishes ?? 0);
+  const router = useRouter();
+  const { user, isReady } = useUser() as any;
+  const { wishes, addWishes, loading } = useWishes(user?.id ?? null);
 
-  const [wishNotice, setWishNotice] = useState<string | null>(null);
+  // 🔐 Si no hay usuario, no dejamos entrar
+  useEffect(() => {
+    if (!isReady) return;
+    if (!user) {
+      router.replace("/login");
+    }
+  }, [isReady, user, router]);
 
-  const handleAdd = (amount: number) => {
-    const next = localWishes + amount;
-    setLocalWishes(next);
-    setWishes(next);
+  if (!isReady || !user) {
+    return (
+      <main className="r4w-panel-page">
+        <section className="r4w-panel-layout">
+          <div className="r4w-panel-main">
+            <div className="r4w-panel-hello">Cargando tus wishes…</div>
+          </div>
+        </section>
+      </main>
+    );
+  }
 
-    // Aviso bonito (sustituye al alert feo)
-    setWishNotice(`Has añadido ${amount} wish(es). Ya tienes ${next} wishes ✨`);
-
-    // Cerrar aviso automáticamente
-    setTimeout(() => setWishNotice(null), 3000);
+  const handleAdd = async (amount: number) => {
+    try {
+      await addWishes(amount);
+    } catch (e) {
+      console.error(e);
+      alert("No se han podido recargar tus wishes. Inténtalo de nuevo.");
+    }
   };
 
   return (
-    <main className="r4w-wishes-page">
-      <section className="r4w-wishes-layout">
-        <header className="r4w-wishes-header">
-          <div>
-            <div className="r4w-question-label">tienda demo de wishes</div>
-            <h1 className="r4w-wishes-title">Recarga tus wishes</h1>
-            <p className="r4w-wishes-subtitle">
-              En la versión completa podrás comprar wishes con dinero real o
-              conseguirlos gracias a tus acciones en la app. Aquí solo estamos
-              simulando el comportamiento.
-            </p>
+    <main className="r4w-panel-page">
+      <section className="r4w-panel-layout">
+        <div className="r4w-panel-main">
+          <header className="r4w-panel-header">
+            <div>
+              <h1 className="r4w-panel-title">Tienda de wishes ✨</h1>
+              <p className="r4w-panel-tagline">
+                Tus wishes son la energía con la que sigues corriendo por tus
+                deseos. Cada respuesta consume 1 wish.
+              </p>
+            </div>
+
+            <div className="r4w-panel-chip r4w-panel-chip-center">
+              Wishes actuales: <strong>{wishes}</strong>
+            </div>
+          </header>
+
+          <div className="r4w-wishes-grid">
+            {/* Pack demo gratis (solo MVP) */}
+            <div className="r4w-wishes-card">
+              <div className="r4w-wishes-label">MVP · demo</div>
+              <h2 className="r4w-wishes-title">Recarga rápida · +5 wishes</h2>
+              <p className="r4w-wishes-text">
+                Úsalo para hacer pruebas mientras construimos la pasarela de
+                pago real.
+              </p>
+              <button
+                type="button"
+                className="r4w-primary-btn"
+                onClick={() => handleAdd(5)}
+                disabled={loading}
+              >
+                Añadir +5 wishes ⚡
+              </button>
+            </div>
+
+            {/* Pack 10 */}
+            <div className="r4w-wishes-card">
+              <div className="r4w-wishes-label">Próximamente</div>
+              <h2 className="r4w-wishes-title">
+                Pack constancia · +10 wishes
+              </h2>
+              <p className="r4w-wishes-text">
+                Ideal para una carrera corta o para recuperar días perdidos.
+              </p>
+              <button type="button" className="r4w-secondary-btn" disabled>
+                Disponible en la siguiente versión
+              </button>
+            </div>
+
+            {/* Pack 20 */}
+            <div className="r4w-wishes-card">
+              <div className="r4w-wishes-label">Próximamente</div>
+              <h2 className="r4w-wishes-title">Pack maratón · +20 wishes</h2>
+              <p className="r4w-wishes-text">
+                Para quienes quieren estar en varias carreras a la vez.
+              </p>
+              <button type="button" className="r4w-secondary-btn" disabled>
+                Disponible en la siguiente versión
+              </button>
+            </div>
           </div>
 
-          <div className="r4w-wishes-chip">
-            <span>Wishes actuales:</span>
-            <strong>{wishes}</strong>
-          </div>
-        </header>
-
-        <div className="r4w-wishes-grid">
-          {PACKS.map((pack) => (
-            <button
-              key={pack.id}
-              type="button"
-              className="r4w-wish-pack"
-              onClick={() => handleAdd(pack.amount)}
-            >
-              <div className="r4w-wish-pack-main">{pack.label}</div>
-              <div className="r4w-wish-pack-note">{pack.note}</div>
-            </button>
-          ))}
-        </div>
-
-        <div className="r4w-wishes-footer">
-          <button
-            type="button"
-            className="r4w-secondary-btn"
-            onClick={resetWishes}
+          <div
+            style={{
+              marginTop: 24,
+              fontSize: 12,
+              color: "var(--r4w-text-muted)",
+            }}
           >
-            Reset demo a valor inicial
-            <span>🔄</span>
-          </button>
+            🎂 Anotación: en la versión siguiente, si tu cumpleaños coincide con
+            una carrera activa, te regalaremos un bonus de wishes extra.
+          </div>
 
-          <div style={{ display: "flex", gap: 8 }}>
-            <Link href="/pregunta" className="r4w-secondary-btn">
-              Volver a la pregunta
-              <span>❓</span>
-            </Link>
+          <div style={{ marginTop: 16 }}>
             <Link href="/panel" className="r4w-secondary-btn">
-              Ir a mi panel
-              <span>📊</span>
+              Volver a mi panel <span>📊</span>
             </Link>
           </div>
         </div>
       </section>
-      {wishNotice && (
-        <div className="r4w-toast">
-          <div className="r4w-toast-card">
-            <div className="r4w-toast-title">Wishes añadidos ✨</div>
-            <p className="r4w-toast-text">{wishNotice}</p>
-
-            <button
-              type="button"
-              className="r4w-primary-btn r4w-toast-btn"
-              onClick={() => setWishNotice(null)}
-            >
-              Seguir jugando 🚀
-            </button>
-          </div>
-        </div>
-      )}
     </main>
   );
 }

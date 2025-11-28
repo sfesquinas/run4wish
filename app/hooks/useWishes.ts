@@ -1,81 +1,185 @@
-// app/hooks/useWishes.ts
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 "use client";
 
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useState } from "react";
 import { supabase } from "../lib/supabaseClient";
 
-/**
- * Hook de wishes REAL por usuario.
- *
- * - userId: id del usuario de Supabase (auth.user.id)
- * - Si no hay userId, funciona en modo "demo" solo en memoria.
- */
-export function useWishes(userId: string | null) {
-  const [wishes, setWishesState] = useState<number>(0);
-  const [loading, setLoading] = useState(false);
+type UseWishesResult = {
+  wishes: number;
+  setWishes: React.Dispatch<React.SetStateAction<number>>;
+  loading: boolean;
+  refreshWishes: () => Promise<void>;
+  addWishes: (amount: number) => Promise<void>;
+  resetWishes: (value?: number) => Promise<void>;
+};
 
-  const fetchWishes = useCallback(async () => {
+const DEFAULT_WISHES = 5;
+
+export function useWishes(userId: string | null): UseWishesResult {
+  const [wishes, setWishes] = useState<number>(DEFAULT_WISHES);
+  const [loading, setLoading] = useState<boolean>(false);
+
+  // 🧡 Cargar wishes desde Supabase cuando tengamos usuario
+  useEffect(() => {
     if (!userId) {
-      // Sin usuario: dejamos el saldo en 0 (demo / no loggeado)
-      setWishesState(0);
+      setWishes(DEFAULT_WISHES);
       return;
     }
 
-    setLoading(true);
+    const load = async () => {
+      setLoading(true);
+      try {
+        const { data, error } = await supabase
+          .from("profiles")
+          .select("wishes")
+          .eq("id", userId)
+          .single();
+
+        if (error) {
+          console.warn("No se han podido cargar los wishes:", error.message);
+          return;
+        }
+
+        if (typeof data?.wishes === "number") {
+          setWishes(data.wishes);
+        }
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    load();
+  }, [userId]);
+
+  // 🔄 Guardar en Supabase (si hay usuario)
+  const persist = async (newWishes: number) => {
+    setWishes(newWishes);
+    if (!userId) return;
+
+    const { error } = await supabase
+      .from("profiles")
+      .update({ wishes: newWishes })
+      .eq("id", userId);
+
+    if (error) {
+      console.error("Error actualizando wishes:", error.message);
+    }
+  };
+
+  const addWishes = async (amount: number) => {
+    const next = wishes + amount;
+    await persist(next);
+  };
+
+  const resetWishes = async (value: number = DEFAULT_WISHES) => {
+    await persist(value);
+  };
+
+  const refreshWishes = async () => {
+    if (!userId) return;
+
     const { data, error } = await supabase
-      .from("r4w_profiles")
+      .from("profiles")
       .select("wishes")
       .eq("id", userId)
       .single();
 
     if (error) {
-      console.error("Error cargando wishes:", error);
-    } else if (data) {
-      setWishesState(data.wishes ?? 0);
+      console.error("Error recargando wishes:", error.message);
+      return;
     }
 
-    setLoading(false);
-  }, [userId]);
-
-  // Cargar wishes cuando tengamos userId
-  useEffect(() => {
-    fetchWishes();
-  }, [fetchWishes]);
-
-  /**
-   * setWishes recibe una función (prev => next),
-   * igual que estabas usando antes.
-   * Actualiza estado Y Supabase a la vez.
-   */
-  const setWishes = useCallback(
-    (updater: (prev: number) => number) => {
-      // Actualizamos inmediatamente en UI
-      setWishesState((prev) => {
-        const next = updater(prev);
-
-        // Si hay usuario, guardamos en Supabase (fire-and-forget)
-        if (userId) {
-          supabase
-            .from("r4w_profiles")
-            .update({ wishes: next })
-            .eq("id", userId)
-            .then(({ error }) => {
-              if (error) {
-                console.error("Error guardando wishes:", error);
-              }
-            });
-        }
-
-        return next;
-      });
-    },
-    [userId]
-  );
-
-  return {
-    wishes,
-    setWishes,
-    loading,
-    refreshWishes: fetchWishes,
+    if (typeof data?.wishes === "number") {
+      setWishes(data.wishes);
+    }
   };
+
+  return { wishes, setWishes, loading, refreshWishes, addWishes, resetWishes };
 }

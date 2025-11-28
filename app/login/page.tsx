@@ -8,11 +8,12 @@ import { useWishes } from "../hooks/useWishes";
 
 export default function LoginPage() {
   const router = useRouter();
-  const { setWishes } = useWishes();   // 👈 NUEVO
+  const { setWishes } = useWishes(null); // en login aún no tenemos userId
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
+
 
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
@@ -65,11 +66,11 @@ export default function LoginPage() {
       if (profileError) {
         console.warn("No se pudo leer el perfil:", profileError.message);
         // Fallback suave: dejamos wishes por defecto
-        setWishes(5);
+        setWishes(() => 5);
       } else {
         const wishesFromProfile =
           typeof profileData?.wishes === "number" ? profileData.wishes : 5;
-        setWishes(wishesFromProfile);
+          setWishes(() => wishesFromProfile);
       }
 
       // 3) Redirigir al panel
