@@ -1,0 +1,18 @@
+# Query: r4w-panel-header
+# ContextLines: 1
+
+3 results - 2 files
+
+app/globals.css:
+   663  
+   664: .r4w-panel-header {
+   665    display: flex;
+
+  1413  
+  1414: .r4w-panel-header-right {
+  1415    display: flex;
+
+app/wishes/page.tsx:
+  47          <div className="r4w-panel-main">
+  48:           <header className="r4w-panel-header">
+  49              <div>

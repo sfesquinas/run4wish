@@ -7,7 +7,6 @@ import { useState } from "react";
 import { useUser } from "../hooks/useUser";
 import { useWishes } from "../hooks/useWishes";
 
-
 export default function TopNav() {
   const router = useRouter();
   const { user, isReady, logout } = useUser() as any;
@@ -19,6 +18,14 @@ export default function TopNav() {
     setMenuOpen(false);
     router.push(path);
   };
+  const baseName =
+    (user as any)?.username_game ??
+    (user as any)?.username ??
+    (user as any)?.displayName ??
+    (user as any)?.email ??
+    "Runner";
+
+  const headerName = `${baseName} ✨`;
 
   return (
     <header className="r4w-topbar">

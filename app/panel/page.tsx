@@ -5,6 +5,7 @@ import { useState, useEffect } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import confetti from "canvas-confetti";
+
 import { useStreak } from "../hooks/useStreak";
 import { useUser } from "../hooks/useUser";
 import { useUserRaces } from "../hooks/useUserRaces";
@@ -12,6 +13,7 @@ import { useWishes } from "../hooks/useWishes";
 import { usePreregistrations } from "../hooks/usePreregistrations";
 
 type MessageKey = "today" | "nextMove" | "nextRaces" | "fullRanking";
+
 type LastAdvance = {
   positions: number;
   ts: number;
@@ -19,14 +21,29 @@ type LastAdvance = {
 
 export default function PanelPage() {
   const router = useRouter();
-  const { user, isReady, preregistrations = [] } = useUser() as any;
+  const { user, isReady } = useUser() as any;
+
+  // 🔁 Datos del usuario
   const { races, loading, refresh } = useUserRaces(user?.email ?? null);
   const { streak, loading: streakLoading } = useStreak();
   const { wishes, loading: wishesLoading } = useWishes(user?.id ?? null);
+  const { preregistrations = [] } = usePreregistrations(user?.email ?? null);
+
   const activeRaces = races.filter((r: any) => r.status === "active");
+
+  // Estado local del panel
   const [openMessage, setOpenMessage] = useState<MessageKey | null>(null);
   const [localPreregCount, setLocalPreregCount] = useState<number | null>(null);
   const [lastAdvance, setLastAdvance] = useState<LastAdvance>(null);
+
+  // 👤 Nombre para mostrar
+  const baseName =
+    (user as any)?.username_game ??
+    (user as any)?.username ??
+    (user as any)?.displayName ??
+    "Runner";
+
+  const displayName = `${baseName} ✨`;
 
   // Guard: si no hay usuario cuando ya hemos cargado, lo mandamos a /login
   useEffect(() => {
@@ -36,7 +53,7 @@ export default function PanelPage() {
     }
   }, [isReady, user, router]);
 
-  // Leer preregistros guardados en localStorage
+  // Leer datos guardados en localStorage
   useEffect(() => {
     if (typeof window === "undefined") return;
 
@@ -70,13 +87,13 @@ export default function PanelPage() {
     });
   }, [openMessage]);
 
-  const displayName =
-    (user as any)?.username_game ??
-    (user as any)?.username ??
-    (user as any)?.email ??
-    "Runner";
+  // 🔢 Número de prerreservas (BBDD → localStorage como backup)
+  const preregCount =
+    (preregistrations ?? []).length > 0
+      ? (preregistrations ?? []).length
+      : localPreregCount ?? 0;
 
-  // 🔄 ESTOS RETURNS YA VAN DESPUÉS DE TODOS LOS HOOKS
+  // 🔄 RETURNS DESPUÉS DE LOS HOOKS
   if (!isReady) {
     return (
       <main className="r4w-panel-page">
@@ -107,8 +124,6 @@ export default function PanelPage() {
     );
   }
 
-  const preregCount = (preregistrations ?? []).length;
-
   const handleOpenMessage = (key: MessageKey) => setOpenMessage(key);
   const handleCloseMessage = () => setOpenMessage(null);
 
@@ -116,16 +131,20 @@ export default function PanelPage() {
     <>
       <main className="r4w-panel-page">
         <div className="r4w-panel-layout">
+          {/* 👋 Burbuja de bienvenida */}
+          <div className="r4w-panel-welcome">
+            <div className="r4w-panel-chip r4w-panel-chip-left">
+              <strong>{displayName}</strong>
+            </div>
+          </div>
+
           {/* COLUMNA IZQUIERDA: resumen carrera + stats */}
           <section className="r4w-panel-main">
-            <header className="r4w-panel-header">
+            <header className="">
               <div>
                 <h1 className="r4w-panel-title">
                   Esta es tu posición en Run4Wish 📊
                 </h1>
-
-                {/* 👋 Saludo con nombre o email */}
-                <div className="r4w-panel-hello">Hola, {displayName}</div>
 
                 <p className="r4w-panel-tagline">
                   Aquí gana quien aparece cada día. La constancia pesa más que
@@ -194,10 +213,7 @@ export default function PanelPage() {
                   );
 
                   return (
-                    <div
-                      key={race.id ?? "r7"}
-                      className="r4w-panel-racecard"
-                    >
+                    <div key={race.id ?? "r7"} className="r4w-panel-racecard">
                       <div className="r4w-panel-race-header">
                         <div className="r4w-panel-race-name">
                           {race.name ?? "Carrera 7 días · MVP"}
@@ -267,6 +283,14 @@ export default function PanelPage() {
               <em>apareciendo por ti y por tu deseo.</em>
             </p>
 
+            {/* Chip de prerreservas */}
+            <div
+              className="r4w-panel-chip r4w-panel-chip-left"
+              style={{ marginBottom: 12 }}
+            >
+              Prerreservas de carreras: <strong>{preregCount}</strong>
+            </div>
+
             <div className="r4w-message-buttons">
               <button
                 type="button"
@@ -328,7 +352,7 @@ export default function PanelPage() {
                 </h3>
                 <p className="r4w-info-text">
                   Cada vez que respondes una pregunta, le dices a tu mente:
-                  <strong> “estoy apareciendo por mí y por mi deseo”.</strong>{" "}
+                  <strong>“estoy apareciendo por mí y por mi deseo”.</strong>{" "}
                   No importa si hoy subes mucho o poco en el ranking; lo
                   importante es que no te salgas de la carrera.
                 </p>

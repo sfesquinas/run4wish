@@ -3560,3 +3560,9 @@ input:focus {
 .r4w-menu-trigger:active {
   transform: scale(0.94);
 }
+.r4w-panel-welcome {
+  width: 100%;
+  display: flex;
+  justify-content: flex-start;
+  margin-bottom: 12px;
+}

@@ -1,4 +1,5 @@
 // app/layout.tsx
+
 import "./globals.css";
 import type { Metadata } from "next";
 import TopNav from "./components/TopNav"; // ⬅️ ESTA LÍNEA ASÍ, SIN LLAVES
