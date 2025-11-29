@@ -131,13 +131,6 @@ export default function PanelPage() {
     <>
       <main className="r4w-panel-page">
         <div className="r4w-panel-layout">
-          {/* 👋 Burbuja de bienvenida */}
-          <div className="r4w-panel-welcome">
-            <div className="r4w-panel-chip r4w-panel-chip-left">
-              <strong>{displayName}</strong>
-            </div>
-          </div>
-
           {/* COLUMNA IZQUIERDA: resumen carrera + stats */}
           <section className="r4w-panel-main">
             <header className="">

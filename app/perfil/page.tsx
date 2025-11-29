@@ -5,6 +5,7 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useUser } from "../hooks/useUser";
+import { supabase } from "../lib/supabaseClient";
 
 const initialAvatars = [
   { id: "a1", emoji: "🏃‍♀️", unlocked: true },
@@ -26,43 +27,63 @@ type StoredProfile = {
 };
 
 export default function PerfilPage() {
-  const { user, isReady } = useUser();
+  const { user, profile, isReady } = useUser();
   const router = useRouter();
 
-  const [username, setUsername] = useState("Runner_You");
+  const [username, setUsername] = useState("");
   const [country, setCountry] = useState("España");
   const [soundOn, setSoundOn] = useState(true);
   const [vibrationOn, setVibrationOn] = useState(true);
   const [selectedAvatar, setSelectedAvatar] = useState<string>("a1");
   const [saving, setSaving] = useState(false);
   const [profileNotice, setProfileNotice] = useState<string | null>(null);
+  const [errorMsg, setErrorMsg] = useState<string | null>(null);
+  const [showUsernameModal, setShowUsernameModal] = useState(false);
+  const [suggestedUsername, setSuggestedUsername] = useState<string>("");
 
-  // Cargar datos del perfil guardado o, si no hay, datos del usuario
+  // Cargar datos del perfil desde Supabase y localStorage
   useEffect(() => {
-    if (!isReady) return;
+    if (!isReady || !user) return;
     if (typeof window === "undefined") return;
 
-    try {
-      const raw = window.localStorage.getItem("r4w_profile");
-      if (raw) {
-        const p = JSON.parse(raw) as Partial<StoredProfile>;
-        if (p.username) setUsername(p.username);
-        if (p.country) setCountry(p.country);
-        if (typeof p.soundOn === "boolean") setSoundOn(p.soundOn);
-        if (typeof p.vibrationOn === "boolean") setVibrationOn(p.vibrationOn);
-        if (p.avatarId) setSelectedAvatar(p.avatarId);
-        return;
-      }
+    const loadProfile = async () => {
+      try {
+        // 1) Cargar datos desde Supabase (username, country, avatar_id)
+        if (profile) {
+          if (profile.username) setUsername(profile.username);
+          if ((profile as any).country) setCountry((profile as any).country);
+          if ((profile as any).avatar_id) {
+            setSelectedAvatar((profile as any).avatar_id);
+          }
+        } else {
+          // Si no hay perfil en Supabase, intentar cargar desde la tabla
+          const { data: profileData } = await supabase
+            .from("r4w_profiles")
+            .select("username, country, avatar_id")
+            .eq("id", user.id)
+            .single();
 
-      // Si no había perfil guardado, usamos algunos datos del user
-      if (user?.country) setCountry(user.country);
-      if ((user as any).avatarId) {
-        setSelectedAvatar((user as any).avatarId as string);
+          if (profileData) {
+            if (profileData.username) setUsername(profileData.username);
+            if (profileData.country) setCountry(profileData.country);
+            if (profileData.avatar_id) setSelectedAvatar(profileData.avatar_id);
+          }
+        }
+
+        // 2) Cargar preferencias locales (soundOn, vibrationOn) desde localStorage
+        const raw = window.localStorage.getItem("r4w_profile");
+        if (raw) {
+          const p = JSON.parse(raw) as Partial<StoredProfile>;
+          if (typeof p.soundOn === "boolean") setSoundOn(p.soundOn);
+          if (typeof p.vibrationOn === "boolean") setVibrationOn(p.vibrationOn);
+        }
+      } catch (err) {
+        console.error("Error cargando perfil:", err);
       }
-    } catch {
-      // silencioso
-    }
-  }, [isReady, user]);
+    };
+
+    loadProfile();
+  }, [isReady, user, profile]);
 
   const handleShare = () => {
     alert(
@@ -70,13 +91,81 @@ export default function PerfilPage() {
     );
   };
 
-  const handleSave = () => {
-    if (typeof window === "undefined") return;
+  // Función para generar un nombre alternativo disponible
+  const generateAlternativeUsername = async (baseUsername: string): Promise<string | null> => {
+    if (!user) return null;
 
-    setSaving(true);
+    // Intentar variaciones del nombre
+    const variations = [
+      `${baseUsername}_${Math.floor(Math.random() * 1000)}`,
+      `${baseUsername}${Math.floor(Math.random() * 100)}`,
+      `${baseUsername}_${Date.now().toString().slice(-4)}`,
+      `${baseUsername}_${Math.floor(Math.random() * 9999)}`,
+    ];
+
+    // Probar cada variación hasta encontrar una disponible
+    for (const variation of variations) {
+      const { data: existing } = await supabase
+        .from("r4w_profiles")
+        .select("id")
+        .eq("username", variation)
+        .neq("id", user.id)
+        .maybeSingle();
+
+      if (!existing) {
+        return variation;
+      }
+    }
+
+    // Si ninguna variación funciona, generar una completamente nueva
+    const randomSuffix = Math.floor(Math.random() * 99999);
+    return `${baseUsername}_${randomSuffix}`;
+  };
+
+  // Función para guardar el perfil (usada tanto en handleSave como en el modal)
+  const saveProfile = async (usernameToSave: string) => {
+    if (typeof window === "undefined" || !user) return false;
+
     try {
+      // Preparar los datos a actualizar (solo incluir campos que tienen valor)
+      const updateData: any = {
+        username: usernameToSave.trim(),
+      };
+
+      // Solo incluir country si tiene valor
+      if (country) {
+        updateData.country = country;
+      }
+
+      // Solo incluir avatar_id si tiene valor
+      if (selectedAvatar) {
+        updateData.avatar_id = selectedAvatar;
+      }
+
+      // Guardar username, country y avatar_id en Supabase
+      const { error: updateError, data } = await supabase
+        .from("r4w_profiles")
+        .update(updateData)
+        .eq("id", user.id)
+        .select();
+
+      if (updateError) {
+        console.error("Error actualizando perfil:", updateError);
+        console.error("Datos intentados:", updateData);
+        console.error("Detalles del error:", updateError.message, updateError.code);
+        
+        // Mensaje de error más específico
+        if (updateError.code === "PGRST116" || updateError.message?.includes("column")) {
+          setErrorMsg("Error: La columna avatar_id o country no existe en la base de datos. Ejecuta el SQL de migración.");
+        } else {
+          setErrorMsg(`No se pudo guardar el perfil: ${updateError.message || "Error desconocido"}`);
+        }
+        return false;
+      }
+
+      // Guardar preferencias locales (soundOn, vibrationOn) en localStorage
       const profileToStore: StoredProfile = {
-        username,
+        username: usernameToSave.trim(),
         country,
         soundOn,
         vibrationOn,
@@ -88,11 +177,80 @@ export default function PerfilPage() {
         JSON.stringify(profileToStore)
       );
 
+      // Actualizar el estado del username
+      setUsername(usernameToSave.trim());
+
+      return true;
+    } catch (err: any) {
+      console.error("Error guardando perfil:", err);
+      setErrorMsg("Ha ocurrido un error inesperado.");
+      return false;
+    }
+  };
+
+  const handleSave = async () => {
+    if (typeof window === "undefined" || !user) return;
+
+    // Validaciones
+    if (!username || username.trim().length === 0) {
+      setErrorMsg("El nombre de usuario es obligatorio.");
+      return;
+    }
+
+    if (username.trim().length < 3) {
+      setErrorMsg("El nombre de usuario debe tener al menos 3 caracteres.");
+      return;
+    }
+
+    setErrorMsg(null);
+    setSaving(true);
+
+    try {
+      const trimmedUsername = username.trim();
+      
+      // 1) Verificar si el username es el mismo que ya tiene guardado en su perfil
+      // Si es el mismo, no necesitamos validar duplicados, solo guardar
+      const currentUsername = profile?.username || (user as any)?.username_game || (user as any)?.username;
+      const isSameUsername = currentUsername && currentUsername.trim().toLowerCase() === trimmedUsername.toLowerCase();
+
+      if (!isSameUsername) {
+        // 2) Solo validar duplicados si está cambiando a un nombre diferente
+        const { data: existingUser } = await supabase
+          .from("r4w_profiles")
+          .select("id")
+          .eq("username", trimmedUsername)
+          .neq("id", user.id)
+          .maybeSingle();
+
+        if (existingUser) {
+          // El nombre ya existe, generar una alternativa y mostrar el modal
+          const alternative = await generateAlternativeUsername(trimmedUsername);
+          if (alternative) {
+            setSuggestedUsername(alternative);
+            setShowUsernameModal(true);
+          } else {
+            setErrorMsg("Este nombre de usuario ya está en uso. Elige otro.");
+          }
+          setSaving(false);
+          return;
+        }
+      }
+
+      // 3) Guardar el perfil (ya sea porque es el mismo nombre o porque es único)
+      const saved = await saveProfile(trimmedUsername);
+      if (!saved) {
+        setSaving(false);
+        return;
+      }
+
       setProfileNotice("Perfil actualizado ✔️");
       setTimeout(() => {
         setProfileNotice(null);
         router.push("/panel");
       }, 1500);
+    } catch (err: any) {
+      console.error("Error guardando perfil:", err);
+      setErrorMsg("Ha ocurrido un error inesperado.");
     } finally {
       setSaving(false);
     }
@@ -133,15 +291,24 @@ export default function PerfilPage() {
             {/* Nombre usuario (juego) */}
             <div>
               <div className="r4w-profile-label">
-                Nombre de usuario (juego)
+                Nombre de usuario (juego) <span style={{ color: "var(--r4w-accent)" }}>*</span>
               </div>
               <input
                 className="r4w-profile-input"
                 type="text"
                 value={username}
-                onChange={(e) => setUsername(e.target.value)}
+                onChange={(e) => {
+                  setUsername(e.target.value);
+                  setErrorMsg(null); // Limpiar error al escribir
+                }}
                 maxLength={20}
+                placeholder="Ej: Runner_SAO"
               />
+              {errorMsg && (
+                <p style={{ marginTop: 6, fontSize: 12, color: "var(--r4w-error, #ef4444)" }}>
+                  {errorMsg}
+                </p>
+              )}
             </div>
 
             {/* País */}
@@ -296,6 +463,82 @@ export default function PerfilPage() {
               onClick={() => setProfileNotice(null)}
             >
               Seguir jugando 🚀
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* Modal flotante: nombre de usuario ya existe */}
+      {showUsernameModal && (
+        <div
+          className="r4w-tooltip-overlay"
+          onClick={(e) => {
+            // Cerrar al hacer clic fuera del modal
+            if (e.target === e.currentTarget) {
+              setShowUsernameModal(false);
+            }
+          }}
+        >
+          <div className="r4w-tooltip-card">
+            <div className="r4w-tooltip-title">Ese nombre ya existe</div>
+            <p className="r4w-tooltip-text">
+              El nombre de usuario <strong>{username.trim()}</strong> ya está en
+              uso. Te proponemos este alternativo:
+            </p>
+            <div
+              style={{
+                background: "rgba(255, 122, 26, 0.1)",
+                border: "1px solid rgba(255, 122, 26, 0.3)",
+                borderRadius: "8px",
+                padding: "12px",
+                marginBottom: "16px",
+                textAlign: "center",
+              }}
+            >
+              <strong style={{ color: "var(--r4w-orange)", fontSize: "16px" }}>
+                {suggestedUsername}
+              </strong>
+            </div>
+            <button
+              type="button"
+              className="r4w-tooltip-close"
+              onClick={async () => {
+                setSaving(true);
+                const saved = await saveProfile(suggestedUsername);
+                if (saved) {
+                  setShowUsernameModal(false);
+                  setProfileNotice("Perfil actualizado ✔️");
+                  setTimeout(() => {
+                    setProfileNotice(null);
+                    router.push("/panel");
+                  }, 1500);
+                } else {
+                  setSaving(false);
+                }
+              }}
+              disabled={saving}
+            >
+              {saving ? "Guardando..." : "Aceptar"}
+            </button>
+            <button
+              type="button"
+              style={{
+                marginTop: "8px",
+                width: "100%",
+                background: "transparent",
+                border: "1px solid rgba(255, 255, 255, 0.2)",
+                borderRadius: "12px",
+                padding: "10px 12px",
+                fontSize: "14px",
+                color: "var(--r4w-text-muted)",
+                cursor: "pointer",
+              }}
+              onClick={() => {
+                setShowUsernameModal(false);
+                setErrorMsg("Elige otro nombre de usuario.");
+              }}
+            >
+              Cancelar
             </button>
           </div>
         </div>

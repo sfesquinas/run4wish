@@ -2101,7 +2101,7 @@ input:focus {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 8px 16px;
+  padding: 12px 20px;
   background: radial-gradient(circle at top left, #1a1a1a 0, #000 60%);
   border-bottom: 1px solid rgba(255, 255, 255, 0.04);
 }
@@ -2110,11 +2110,11 @@ input:focus {
 .r4w-topnav-brand {
   display: inline-flex;
   align-items: center;
-  gap: 8px;
+  gap: 10px;
   border: none;
   background: transparent;
   /* <- esto quita el rectángulo blanco */
-  padding: 0;
+  padding: 4px 0;
   cursor: pointer;
 }
 
@@ -2143,11 +2143,17 @@ input:focus {
   margin-top: 1px;
 }
 
+.r4w-topnav-left {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
 .r4w-topnav-right {
   display: flex;
   flex-direction: column;
   align-items: flex-end;
-  gap: 2px;
+  gap: 4px;
   font-size: 12px;
 }
 
@@ -3230,10 +3236,11 @@ input:focus {
 .r4w-topnav-inner {
   max-width: 960px;
   margin: 0 auto;
-  padding: 8px 16px;
+  padding: 8px 20px;
   display: flex;
   align-items: center;
   justify-content: space-between;
+  gap: 20px;
 }
 
 @media (min-width: 768px) {
@@ -3533,28 +3540,29 @@ input:focus {
 
 /* Botón del menú superior */
 .r4w-menu-trigger {
-  width: 25px;
-  height: 25px;
+  width: 28px;
+  height: 28px;
   border-radius: 50%;
-  border: 3px solid rgba(255, 255, 255, 0.25);
-  background: #000; /* fondo negro */
-  color: #FF7A1A !important;    /* 🔥 fuerza el color naranja */
-  fill: #FF7A1A !important;     /* 🔥 por si usa SVG */
+  border: 2px solid rgba(255, 122, 26, 0.4);
+  background: rgba(255, 122, 26, 0.1);
+  color: #FF7A1A !important;
+  fill: #FF7A1A !important;
   stroke: #FF7A1A !important;
-  font-size: 18px;
+  font-size: 14px;
   font-weight: bold;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  flex-shrink: 0;
 
   display: flex;
   align-items: center;
   justify-content: center;
-
-  cursor: pointer;
-  transition: 0.15s ease-in-out;
 }
 
 .r4w-menu-trigger:hover {
-  background: #111;
-  border-color: rgba(255, 255, 255, 0.35);
+  background: rgba(255, 122, 26, 0.2);
+  border-color: rgba(255, 122, 26, 0.6);
+  transform: scale(1.05);
 }
 
 .r4w-menu-trigger:active {

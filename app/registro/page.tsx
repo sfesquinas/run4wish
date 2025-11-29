@@ -27,7 +27,6 @@ export default function RegistroPage() {
   const { user } = useUser();
   const { setWishes } = useWishes(user?.id ?? null);
 
-  const [username, setUsername] = useState("");
   const [email, setEmail] = useState("");
   const [birthdate, setBirthdate] = useState("");
   const [password, setPassword] = useState("");
@@ -39,8 +38,8 @@ export default function RegistroPage() {
     e.preventDefault();
     setErrorMsg(null);
 
-    // Validaciones básicas
-    if (!username || !email || !birthdate || !password || !password2) {
+    // Validaciones básicas (sin username, se rellenará en el perfil)
+    if (!email || !birthdate || !password || !password2) {
       setErrorMsg("Por favor, rellena todos los campos.");
       return;
     }
@@ -59,13 +58,12 @@ export default function RegistroPage() {
     setLoading(true);
 
     try {
-      // 1) Crear usuario en Supabase Auth
+      // 1) Crear usuario en Supabase Auth (sin username, se rellenará en el perfil)
       const { data, error } = await supabase.auth.signUp({
         email,
         password,
         options: {
           data: {
-            username,
             birthdate,
           },
         },
@@ -87,14 +85,14 @@ export default function RegistroPage() {
         return;
       }
 
-      // 2) Crear / actualizar perfil en la tabla r4w_profiles
+      // 2) Crear perfil inicial en la tabla r4w_profiles (sin username, se rellenará en /perfil)
       const { error: profileError } = await supabase
         .from("r4w_profiles")
         .upsert(
           {
             id: createdUser.id,
             email: createdUser.email,
-            username,
+            username: null, // Se rellenará en la página de perfil
             birthdate,
             wishes: INITIAL_WISHES,
           },
@@ -113,8 +111,8 @@ export default function RegistroPage() {
       // 3) Sincronizar wishes iniciales en el store local
       setWishes(() => INITIAL_WISHES);
 
-      // 4) Redirigir al panel
-      router.push("/panel");
+      // 4) Redirigir a la página de perfil para que complete su nombre, país y avatar
+      router.push("/perfil");
     } catch (err: any) {
       console.error(err);
       setErrorMsg("Ha ocurrido un error inesperado.");
@@ -133,18 +131,6 @@ export default function RegistroPage() {
         </p>
 
         <form className="r4w-auth-form" onSubmit={handleSubmit}>
-          <label className="r4w-auth-label">
-            Nombre de juego
-            <input
-              className="r4w-auth-input"
-              type="text"
-              value={username}
-              onChange={(e) => setUsername(e.target.value)}
-              maxLength={30}
-              placeholder="Ej: Runner_SAO"
-            />
-          </label>
-
           <label className="r4w-auth-label">
             Email
             <input

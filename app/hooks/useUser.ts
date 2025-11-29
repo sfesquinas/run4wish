@@ -11,6 +11,8 @@ type R4WProfile = {
   username: string | null;
   birthdate: string | null;
   wishes: number | null;
+  country: string | null;
+  avatar_id: string | null;
 };
 
 // Devolvemos tipos muy abiertos (any) para no romper nada existente
@@ -72,10 +74,33 @@ export function useUser() {
     const {
       data: { subscription },
     } = supabase.auth.onAuthStateChange(
-      (_event: AuthChangeEvent, session: Session | null) => {
+      async (_event: AuthChangeEvent, session: Session | null) => {
         if (!isMounted) return;
         const currentUser = session?.user ?? null;
         setUser(currentUser);
+
+        // Recargar el perfil cuando cambia la sesión (login/logout)
+        if (currentUser?.id) {
+          const { data: profileData, error: profileError } = await supabase
+            .from("r4w_profiles")
+            .select("*")
+            .eq("id", currentUser.id)
+            .single();
+
+          if (!isMounted) return;
+
+          if (!profileError && profileData) {
+            setProfile(profileData as R4WProfile);
+            setWishes(profileData.wishes ?? 0);
+          } else {
+            setProfile(null);
+            setWishes(0);
+          }
+        } else {
+          // Si no hay usuario (logout), limpiar perfil
+          setProfile(null);
+          setWishes(0);
+        }
       }
     );
 

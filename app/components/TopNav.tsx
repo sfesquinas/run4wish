@@ -9,68 +9,65 @@ import { useWishes } from "../hooks/useWishes";
 
 export default function TopNav() {
   const router = useRouter();
-  const { user, isReady, logout } = useUser() as any;
+  const { user, profile, isReady, logout } = useUser() as any;
   const { wishes } = useWishes(user?.id ?? null);
   const [menuOpen, setMenuOpen] = useState(false);
+  
+  // Nombre de usuario: primero username del profile (Supabase), luego username_game, luego username del user, si no hay ninguno, "Runner"
   const displayName =
-    user?.username_game || user?.username || user?.email || "Runner";
+    profile?.username || user?.username_game || user?.username || "Runner";
+  
   const handleNavigate = (path: string) => {
     setMenuOpen(false);
     router.push(path);
   };
-  const baseName =
-    (user as any)?.username_game ??
-    (user as any)?.username ??
-    (user as any)?.displayName ??
-    (user as any)?.email ??
-    "Runner";
-
-  const headerName = `${baseName} ✨`;
 
   return (
     <header className="r4w-topbar">
       <div className="r4w-topnav">
         <div className="r4w-topnav-inner">
-          {/* Logo / brand: siempre lleva a la home */}
-          <button
-            type="button"
-            className="r4w-topnav-brand"
-            onClick={() => router.push("/")}
-          >
-            <div className="r4w-topnav-logo">
-              {/* Usa la misma ruta de icono que ya tenías */}
-              <img
-                src="/r4w-icon.png"
-                alt="Run4Wish"
-                width={32}
-                height={32}
-              />
-            </div>
-            <div className="r4w-topnav-text">
-              RUN<span className="r4w-topnav-4">4</span>WISH
-            </div>
-          </button>
+          {/* Logo / brand + botón menú: agrupados a la izquierda */}
+          <div className="r4w-topnav-left">
+            <button
+              type="button"
+              className="r4w-topnav-brand"
+              onClick={() => router.push("/")}
+            >
+              <div className="r4w-topnav-logo">
+                <img
+                  src="/r4w-icon.png"
+                  alt="Run4Wish"
+                  width={32}
+                  height={32}
+                />
+              </div>
+              <div className="r4w-topnav-text">
+                RUN<span className="r4w-topnav-4">4</span>WISH
+              </div>
+            </button>
 
-          {/* Zona derecha: usuario o login/registro */}
+            {/* Botón del menú justo después del nombre (solo si hay usuario) */}
+            {user && (
+              <button
+                type="button"
+                onClick={() => setMenuOpen((open) => !open)}
+                className="r4w-menu-trigger"
+              >
+                ▾
+              </button>
+            )}
+          </div>
+
+          {/* Zona derecha: usuario y wishes alineados a la derecha */}
           <div className="r4w-topnav-right">
             {user ? (
               <>
                 <div className="r4w-topnav-user">
-                  Hola,&nbsp;
-                  <span className="r4w-topnav-user-name">{displayName}</span>
+                  <span className="r4w-topnav-user-name">{displayName} ✨</span>
                 </div>
                 <div className="r4w-topnav-wishes">
                   Wishes:&nbsp;<span>{wishes}</span>
                 </div>
-
-                {/* Botón que abre el menú */}
-                <button
-                  type="button"
-                  onClick={() => setMenuOpen((open) => !open)}
-                  className="r4w-menu-trigger"
-                >
-                  ▾
-                </button>
               </>
             ) : (
               <div className="r4w-topnav-auth">
@@ -129,7 +126,8 @@ export default function TopNav() {
                   if (logout) {
                     await logout();
                   }
-                  router.push("/");
+                  // Redirigir a la pantalla de login después de cerrar sesión
+                  router.push("/login");
                 }}
               >
                 Cerrar sesión
