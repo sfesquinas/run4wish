@@ -1,104 +1,70 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { supabase } from "../lib/supabaseClient";
+import { useUser } from "./useUser";
 
-type StreakState = {
-  current: number;
-  best: number;
-  lastAnsweredDate: string | null; // "YYYY-MM-DD"
+type UseStreakResult = {
+  streak: number;
+  loading: boolean;
+  registerCorrectAnswer: () => Promise<void>;
 };
 
-const STORAGE_KEY = "r4w_streak_v1";
+export function useStreak(): UseStreakResult {
+  const { user, isReady } = useUser() as any;
+  const [streak, setStreak] = useState<number>(0);
+  const [loading, setLoading] = useState<boolean>(false);
 
-function loadInitial(): StreakState {
-  if (typeof window === "undefined") {
-    return { current: 0, best: 0, lastAnsweredDate: null };
-  }
-  try {
-    const raw = window.localStorage.getItem(STORAGE_KEY);
-    if (!raw) {
-      return { current: 0, best: 0, lastAnsweredDate: null };
-    }
-    const parsed = JSON.parse(raw) as Partial<StreakState>;
-    return {
-      current: parsed.current ?? 0,
-      best: parsed.best ?? 0,
-      lastAnsweredDate: parsed.lastAnsweredDate ?? null,
-    };
-  } catch {
-    return { current: 0, best: 0, lastAnsweredDate: null };
-  }
-}
-
-function saveState(next: StreakState) {
-  if (typeof window === "undefined") return;
-  try {
-    window.localStorage.setItem(STORAGE_KEY, JSON.stringify(next));
-  } catch {
-    // silencioso
-  }
-}
-
-function getTodayYMD() {
-  const d = new Date();
-  return d.toISOString().slice(0, 10); // "YYYY-MM-DD"
-}
-
-function diffInDays(a: string, b: string) {
-  const da = new Date(a).getTime();
-  const db = new Date(b).getTime();
-  return Math.round((db - da) / 86400000);
-}
-
-/**
- * Racha = número de días seguidos en los que ha respondido la PREGUNTA CORRECTAMENTE.
- */
-export function useStreak() {
-  const [streak, setStreak] = useState<StreakState | null>(null);
-
-  // Cargar de localStorage al montar
+  // 1) Cargar la racha actual cuando haya usuario
   useEffect(() => {
-    const initial = loadInitial();
-    setStreak(initial);
-  }, []);
+    if (!isReady || !user) return;
 
-  const registerCorrectAnswer = () => {
-    if (!streak) return;
+    const loadStreak = async () => {
+      try {
+        setLoading(true);
 
-    const today = getTodayYMD();
+        const { data, error } = await supabase
+          .from("streaks")                 // tabla que crearemos más adelante
+          .select("current_streak")
+          .eq("user_id", user.id)
+          .single();
 
-    // Si ya respondió bien hoy, no sumamos nada
-    if (streak.lastAnsweredDate === today) {
-      return;
-    }
-
-    let nextCurrent = 1;
-
-    if (streak.lastAnsweredDate) {
-      const diff = diffInDays(streak.lastAnsweredDate, today);
-      if (diff === 1) {
-        // Ayer también respondió → continúa racha
-        nextCurrent = streak.current + 1;
-      } else {
-        // Han pasado varios días → racha se reinicia
-        nextCurrent = 1;
+        if (!error && data?.current_streak != null) {
+          setStreak(data.current_streak);
+        } else {
+          // si no hay registro todavía, empezamos en 0
+          setStreak(0);
+        }
+      } catch (err) {
+        console.error("Error cargando racha:", err);
+      } finally {
+        setLoading(false);
       }
-    }
-
-    const next: StreakState = {
-      current: nextCurrent,
-      best: Math.max(streak.best, nextCurrent),
-      lastAnsweredDate: today,
     };
 
-    setStreak(next);
-    saveState(next);
+    loadStreak();
+  }, [isReady, user]);
+
+  // 2) Registrar que ha contestado bien (se usa en PreguntaPage)
+  const registerCorrectAnswer = async () => {
+    if (!user) return;
+
+    // actualización optimista en el cliente
+    setStreak((prev) => prev + 1);
+
+    try {
+      // Más adelante conectaremos esto con una función RPC o tabla real
+      const { error } = await supabase.rpc("r4w_increment_streak", {
+        p_user_id: user.id,
+      });
+
+      if (error) {
+        console.error("Error actualizando racha en Supabase:", error);
+      }
+    } catch (err) {
+      console.error("Error en registerCorrectAnswer:", err);
+    }
   };
 
-  return {
-    currentStreak: streak?.current ?? 0,
-    bestStreak: streak?.best ?? 0,
-    registerCorrectAnswer,
-    isReady: !!streak,
-  };
+  return { streak, loading, registerCorrectAnswer };
 }

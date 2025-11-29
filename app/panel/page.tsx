@@ -5,25 +5,28 @@ import { useState, useEffect } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import confetti from "canvas-confetti";
-
+import { useStreak } from "../hooks/useStreak";
 import { useUser } from "../hooks/useUser";
 import { useUserRaces } from "../hooks/useUserRaces";
+import { useWishes } from "../hooks/useWishes";
+import { usePreregistrations } from "../hooks/usePreregistrations";
 
 type MessageKey = "today" | "nextMove" | "nextRaces" | "fullRanking";
+type LastAdvance = {
+  positions: number;
+  ts: number;
+} | null;
 
 export default function PanelPage() {
   const router = useRouter();
   const { user, isReady, preregistrations = [] } = useUser() as any;
   const { races, loading, refresh } = useUserRaces(user?.email ?? null);
-
-  // 👇 TODOS LOS HOOKS VAN AQUÍ ARRIBA, SIN IF/RETURN ENTRE MEDIAS
+  const { streak, loading: streakLoading } = useStreak();
+  const { wishes, loading: wishesLoading } = useWishes(user?.id ?? null);
   const activeRaces = races.filter((r: any) => r.status === "active");
-
-  // qué mensaje flotante está abierto
   const [openMessage, setOpenMessage] = useState<MessageKey | null>(null);
-
-  // preregistros guardados en localStorage (MVP)
   const [localPreregCount, setLocalPreregCount] = useState<number | null>(null);
+  const [lastAdvance, setLastAdvance] = useState<LastAdvance>(null);
 
   // Guard: si no hay usuario cuando ya hemos cargado, lo mandamos a /login
   useEffect(() => {
@@ -36,8 +39,21 @@ export default function PanelPage() {
   // Leer preregistros guardados en localStorage
   useEffect(() => {
     if (typeof window === "undefined") return;
-    const stored = window.localStorage.getItem("r4w_prereg_count");
-    if (stored) setLocalPreregCount(Number(stored));
+
+    // Prerregistros
+    const storedPrereg = window.localStorage.getItem("r4w_prereg_count");
+    if (storedPrereg) setLocalPreregCount(Number(storedPrereg));
+
+    // Último avance (puestos adelantados)
+    const storedAdvance = window.localStorage.getItem("r4w_last_advance");
+    if (storedAdvance) {
+      try {
+        const parsed = JSON.parse(storedAdvance);
+        setLastAdvance(parsed);
+      } catch {
+        // si por lo que sea está corrupto, lo ignoramos
+      }
+    }
   }, []);
 
   // mini-confeti suave al abrir cualquier mensaje
@@ -107,10 +123,28 @@ export default function PanelPage() {
                 <h1 className="r4w-panel-title">
                   Esta es tu posición en Run4Wish 📊
                 </h1>
+
+                {/* 👋 Saludo con nombre o email */}
+                <div className="r4w-panel-hello">Hola, {displayName}</div>
+
                 <p className="r4w-panel-tagline">
                   Aquí gana quien aparece cada día. La constancia pesa más que
                   la suerte.
                 </p>
+
+                {/* 🔮 Wishes actuales */}
+                <div className="r4w-panel-chip">
+                  🔮 Wishes disponibles:{" "}
+                  <strong>{wishesLoading ? "…" : wishes}</strong>
+                </div>
+
+                {/* 🔥 Racha actual */}
+                <div className="r4w-panel-chip">
+                  🔥 Racha actual:{" "}
+                  <strong>
+                    {streakLoading ? "…" : `${streak} día${streak === 1 ? "" : "s"}`}
+                  </strong>
+                </div>
 
                 {/* Contador de carreras activas */}
                 <div className="r4w-panel-chip r4w-panel-chip-center">
@@ -126,11 +160,30 @@ export default function PanelPage() {
                   alignItems: "flex-end",
                 }}
               >
+                <Link href="/pregunta" className="r4w-secondary-btn">
+                  Pregunta de hoy <span>❓</span>
+                </Link>
+
                 <Link href="/perfil" className="r4w-secondary-btn">
                   Editar perfil <span>👤</span>
                 </Link>
               </div>
             </header>
+
+            {/* Último avance en la carrera */}
+            {lastAdvance && (
+              <div className="r4w-panel-next" style={{ marginTop: 16 }}>
+                <div className="r4w-panel-next-label">Tu último avance 🎉</div>
+                <div className="r4w-panel-next-main">
+                  En tu última respuesta correcta adelantaste{" "}
+                  <strong>{lastAdvance.positions}</strong> puestos en la
+                  carrera.
+                </div>
+                <div className="r4w-panel-next-time">
+                  Sigue respondiendo cada día para mantener el ritmo.
+                </div>
+              </div>
+            )}
 
             {/* Lista de carreras activas */}
             {activeRaces.length > 0 ? (
