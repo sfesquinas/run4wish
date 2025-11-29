@@ -2,6 +2,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import type { Session, AuthChangeEvent } from "@supabase/supabase-js";
 import { supabase } from "../lib/supabaseClient";
 
 type R4WProfile = {
@@ -70,19 +71,13 @@ export function useUser() {
     // 3) Escuchar cambios de sesión (login, logout, etc.)
     const {
       data: { subscription },
-    } = supabase.auth.onAuthStateChange((_event, session) => {
-      if (!isMounted) return;
-      const currentUser = session?.user ?? null;
-      setUser(currentUser);
-
-      if (!currentUser) {
-        setProfile(null);
-        setWishes(0);
-      } else {
-        // recargamos perfil cuando haya nuevo login
-        fetchUserAndProfile();
+    } = supabase.auth.onAuthStateChange(
+      (_event: AuthChangeEvent, session: Session | null) => {
+        if (!isMounted) return;
+        const currentUser = session?.user ?? null;
+        setUser(currentUser);
       }
-    });
+    );
 
     return () => {
       isMounted = false;
