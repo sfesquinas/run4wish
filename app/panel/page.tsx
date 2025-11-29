@@ -213,23 +213,6 @@ export default function PanelPage() {
                 </div>
               )}
             </div>
-
-            {/* Tarjeta demo cuando no hay carreras activas */}
-            {activeRaces.length === 0 && (
-              <div className="r4w-panel-demo-card">
-                <div className="r4w-panel-demo-label">MVP · Demo</div>
-                <div className="r4w-panel-demo-title">Demo · Carrera 7 días</div>
-                <div className="r4w-panel-demo-text">
-                  Este es un ejemplo de cómo verías tu carrera cuando esté activa.
-                </div>
-                <div className="r4w-panel-demo-hint">
-                  Únete a una carrera real para empezar a sumar puntos y avanzar posiciones.
-                </div>
-                <Link href="/carreras" className="r4w-panel-demo-btn">
-                  Ver carreras disponibles <span>🏁</span>
-                </Link>
-              </div>
-            )}
           </section>
 
           {/* COLUMNA DERECHA: mensajes + siguiente movimiento */}
