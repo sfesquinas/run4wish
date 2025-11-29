@@ -97,6 +97,7 @@ type UseWishesResult = {
   loading: boolean;
   refreshWishes: () => Promise<void>;
   addWishes: (amount: number) => Promise<void>;
+  subtractWishes: (amount: number) => Promise<void>;
   resetWishes: (value?: number) => Promise<void>;
 };
 
@@ -117,7 +118,7 @@ export function useWishes(userId: string | null): UseWishesResult {
       setLoading(true);
       try {
         const { data, error } = await supabase
-          .from("profiles")
+          .from("r4w_profiles")
           .select("wishes")
           .eq("id", userId)
           .single();
@@ -144,7 +145,7 @@ export function useWishes(userId: string | null): UseWishesResult {
     if (!userId) return;
 
     const { error } = await supabase
-      .from("profiles")
+      .from("r4w_profiles")
       .update({ wishes: newWishes })
       .eq("id", userId);
 
@@ -158,6 +159,11 @@ export function useWishes(userId: string | null): UseWishesResult {
     await persist(next);
   };
 
+  const subtractWishes = async (amount: number) => {
+    const next = Math.max(0, wishes - amount); // No permitir valores negativos
+    await persist(next);
+  };
+
   const resetWishes = async (value: number = DEFAULT_WISHES) => {
     await persist(value);
   };
@@ -166,7 +172,7 @@ export function useWishes(userId: string | null): UseWishesResult {
     if (!userId) return;
 
     const { data, error } = await supabase
-      .from("profiles")
+      .from("r4w_profiles")
       .select("wishes")
       .eq("id", userId)
       .single();
@@ -181,5 +187,5 @@ export function useWishes(userId: string | null): UseWishesResult {
     }
   };
 
-  return { wishes, setWishes, loading, refreshWishes, addWishes, resetWishes };
+  return { wishes, setWishes, loading, refreshWishes, addWishes, subtractWishes, resetWishes };
 }

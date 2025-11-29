@@ -116,6 +116,14 @@ export default function TopNav() {
                 Tienda de wishes
               </button>
 
+              <button
+                type="button"
+                className="r4w-menu-item"
+                onClick={() => handleNavigate("/perfil")}
+              >
+                Editar perfil
+              </button>
+
               <hr className="r4w-menu-divider" />
 
               <button
