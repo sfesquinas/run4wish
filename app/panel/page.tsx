@@ -107,21 +107,8 @@ export default function PanelPage() {
   }
 
   if (!user) {
-    return (
-      <main className="r4w-panel-page">
-        <section className="r4w-panel-layout r4w-panel-enter">
-            <div className="r4w-panel-main">
-            <h1 className="r4w-panel-title">Tu panel Run4Wish</h1>
-            <p className="r4w-panel-hello">
-              Crea tu acceso para empezar a sumar puntos.
-            </p>
-            <Link href="/registro" className="r4w-primary-btn">
-              Crear acceso ➜
-            </Link>
-          </div>
-        </section>
-      </main>
-    );
+    // No mostrar nada, el useEffect ya redirige a /login
+    return null;
   }
 
   const handleOpenMessage = (key: MessageKey) => setOpenMessage(key);
