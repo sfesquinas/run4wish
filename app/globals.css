@@ -593,6 +593,31 @@ input:focus {
   gap: 24px;
 }
 
+/* Animación de entrada del panel */
+.r4w-panel-enter {
+  animation: r4wFadeUp 0.5s ease-out forwards;
+}
+
+@keyframes r4wFadeUp {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Respetar preferencia de reducción de movimiento */
+@media (prefers-reduced-motion: reduce) {
+  .r4w-panel-enter {
+    animation: none;
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
 .r4w-panel-main,
 .r4w-panel-side {
   background: linear-gradient(145deg, #262629, #18181a);
@@ -874,6 +899,74 @@ input:focus {
 .r4w-panel-next-time {
   font-size: 12px;
   color: var(--r4w-orange);
+}
+
+/* Tarjeta demo MVP */
+.r4w-panel-demo-card {
+  background-color: #202023;
+  border-radius: 16px;
+  padding: 16px;
+  border: 1px solid rgba(255, 122, 26, 0.3);
+  margin-top: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.r4w-panel-demo-label {
+  font-size: 10px;
+  color: var(--r4w-orange);
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  font-weight: 600;
+  margin-bottom: 4px;
+}
+
+.r4w-panel-demo-title {
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--r4w-text);
+  margin-bottom: 4px;
+}
+
+.r4w-panel-demo-text {
+  font-size: 13px;
+  color: var(--r4w-text);
+  line-height: 1.5;
+}
+
+.r4w-panel-demo-hint {
+  font-size: 12px;
+  color: var(--r4w-text-muted);
+  line-height: 1.4;
+  margin-top: 4px;
+}
+
+.r4w-panel-demo-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  margin-top: 8px;
+  padding: 10px 16px;
+  border-radius: 12px;
+  background: linear-gradient(90deg, var(--r4w-orange-soft), var(--r4w-orange));
+  border: 1px solid var(--r4w-orange-soft);
+  color: #fff !important;
+  font-weight: 600;
+  font-size: 13px;
+  text-decoration: none;
+  transition: all 0.2s ease;
+  box-shadow: 0 2px 8px rgba(255, 122, 26, 0.2);
+}
+
+.r4w-panel-demo-btn:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(255, 122, 26, 0.3);
+}
+
+.r4w-panel-demo-btn:active {
+  transform: translateY(0);
 }
 
 /* preregistro bloque en panel */
@@ -4216,6 +4309,63 @@ input:focus {
   min-width: 0;
   width: 100%;
   transition: all 0.2s ease;
+  opacity: 0;
+  transform: scale(0.9);
+  animation: r4wKpiEnter 0.4s ease-out forwards;
+}
+
+/* Animaciones escalonadas para las tarjetas KPI */
+.r4w-kpi-anim-1 {
+  animation-delay: 0ms;
+}
+
+.r4w-kpi-anim-2 {
+  animation-delay: 80ms;
+}
+
+.r4w-kpi-anim-3 {
+  animation-delay: 160ms;
+}
+
+.r4w-kpi-anim-4 {
+  animation-delay: 240ms;
+}
+
+.r4w-kpi-anim-5 {
+  animation-delay: 320ms;
+}
+
+.r4w-kpi-anim-6 {
+  animation-delay: 400ms;
+}
+
+@keyframes r4wKpiEnter {
+  from {
+    opacity: 0;
+    transform: scale(0.9);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+/* Respetar preferencia de reducción de movimiento para KPIs */
+@media (prefers-reduced-motion: reduce) {
+  .r4w-panel-kpi-card {
+    animation: none;
+    opacity: 1;
+    transform: scale(1);
+  }
+
+  .r4w-kpi-anim-1,
+  .r4w-kpi-anim-2,
+  .r4w-kpi-anim-3,
+  .r4w-kpi-anim-4,
+  .r4w-kpi-anim-5,
+  .r4w-kpi-anim-6 {
+    animation-delay: 0ms;
+  }
 }
 
 .r4w-panel-kpi-card-button {

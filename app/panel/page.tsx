@@ -97,7 +97,7 @@ export default function PanelPage() {
   if (!isReady) {
     return (
       <main className="r4w-panel-page">
-        <section className="r4w-panel-layout">
+        <section className="r4w-panel-layout r4w-panel-enter">
           <div className="r4w-panel-main">
             <div className="r4w-panel-hello">Cargando tu panel…</div>
           </div>
@@ -109,7 +109,7 @@ export default function PanelPage() {
   if (!user) {
     return (
       <main className="r4w-panel-page">
-        <section className="r4w-panel-layout">
+        <section className="r4w-panel-layout r4w-panel-enter">
             <div className="r4w-panel-main">
             <h1 className="r4w-panel-title">Tu panel Run4Wish</h1>
             <p className="r4w-panel-hello">
@@ -130,7 +130,7 @@ export default function PanelPage() {
   return (
     <>
       <main className="r4w-panel-page">
-        <div className="r4w-panel-layout">
+        <div className="r4w-panel-layout r4w-panel-enter">
           {/* COLUMNA IZQUIERDA: resumen carrera + stats */}
           <section className="r4w-panel-main">
             {/* Header: saludo en una línea */}
@@ -145,7 +145,7 @@ export default function PanelPage() {
             {/* Sección de KPIs en cuadrícula 3x2 */}
             <div className="r4w-panel-kpis">
               {/* Fila 1 */}
-              <div className="r4w-panel-kpi-card">
+              <div className="r4w-panel-kpi-card r4w-kpi-anim-1">
                 <div className="r4w-panel-kpi-icon">🔮</div>
                 <div className="r4w-panel-kpi-label">Wishes disponibles</div>
                 <div className="r4w-panel-kpi-value">
@@ -153,7 +153,7 @@ export default function PanelPage() {
                 </div>
               </div>
 
-              <div className="r4w-panel-kpi-card">
+              <div className="r4w-panel-kpi-card r4w-kpi-anim-2">
                 <div className="r4w-panel-kpi-icon">🔥</div>
                 <div className="r4w-panel-kpi-label">Racha actual</div>
                 <div className="r4w-panel-kpi-value">
@@ -161,14 +161,14 @@ export default function PanelPage() {
                 </div>
               </div>
 
-              <div className="r4w-panel-kpi-card">
+              <div className="r4w-panel-kpi-card r4w-kpi-anim-3">
                 <div className="r4w-panel-kpi-icon">🏁</div>
                 <div className="r4w-panel-kpi-label">Carreras activas</div>
                 <div className="r4w-panel-kpi-value">{activeRaces.length}</div>
               </div>
 
               {/* Fila 2 */}
-              <div className="r4w-panel-kpi-card">
+              <div className="r4w-panel-kpi-card r4w-kpi-anim-4">
                 <div className="r4w-panel-kpi-icon">📈</div>
                 <div className="r4w-panel-kpi-label">Puestos desde ayer</div>
                 <div className="r4w-panel-kpi-value">
@@ -176,7 +176,7 @@ export default function PanelPage() {
                 </div>
               </div>
 
-              <div className="r4w-panel-kpi-card">
+              <div className="r4w-panel-kpi-card r4w-kpi-anim-5">
                 <div className="r4w-panel-kpi-icon">⭐</div>
                 <div className="r4w-panel-kpi-label">Mejor posición</div>
                 <div className="r4w-panel-kpi-value">
@@ -186,7 +186,7 @@ export default function PanelPage() {
                 </div>
               </div>
 
-              <Link href="/carreras" className="r4w-panel-kpi-card r4w-panel-kpi-card-button">
+              <Link href="/carreras" className="r4w-panel-kpi-card r4w-panel-kpi-card-button r4w-kpi-anim-6">
                 <div className="r4w-panel-kpi-icon">🚀</div>
                 <div className="r4w-panel-kpi-label">Ver carreras</div>
                 <div className="r4w-panel-kpi-value">→</div>
@@ -226,6 +226,23 @@ export default function PanelPage() {
                 </div>
               )}
             </div>
+
+            {/* Tarjeta demo cuando no hay carreras activas */}
+            {activeRaces.length === 0 && (
+              <div className="r4w-panel-demo-card">
+                <div className="r4w-panel-demo-label">MVP · Demo</div>
+                <div className="r4w-panel-demo-title">Demo · Carrera 7 días</div>
+                <div className="r4w-panel-demo-text">
+                  Este es un ejemplo de cómo verías tu carrera cuando esté activa.
+                </div>
+                <div className="r4w-panel-demo-hint">
+                  Únete a una carrera real para empezar a sumar puntos y avanzar posiciones.
+                </div>
+                <Link href="/carreras" className="r4w-panel-demo-btn">
+                  Ver carreras disponibles <span>🏁</span>
+                </Link>
+              </div>
+            )}
           </section>
 
           {/* COLUMNA DERECHA: mensajes + siguiente movimiento */}
