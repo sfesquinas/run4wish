@@ -31,6 +31,8 @@ export default function RegistroPage() {
   const [birthdate, setBirthdate] = useState("");
   const [password, setPassword] = useState("");
   const [password2, setPassword2] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
+  const [showPassword2, setShowPassword2] = useState(false);
   const [loading, setLoading] = useState(false);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
 
@@ -131,54 +133,82 @@ export default function RegistroPage() {
         </p>
 
         <form className="r4w-auth-form" onSubmit={handleSubmit}>
-          <label className="r4w-auth-label">
-            Email
-            <input
-              className="r4w-auth-input"
-              type="email"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              placeholder="tucorreo@email.com"
-            />
-          </label>
+          <div className="r4w-auth-fields">
+            <label className="r4w-auth-label">
+              <span className="r4w-auth-label-text">Email</span>
+              <input
+                className="r4w-auth-input"
+                type="email"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                placeholder="tucorreo@email.com"
+                required
+              />
+            </label>
 
-          <label className="r4w-auth-label">
-            Fecha de nacimiento
-            <input
-              className="r4w-auth-input"
-              type="date"
-              value={birthdate}
-              onChange={(e) => setBirthdate(e.target.value)}
-            />
-          </label>
+            <label className="r4w-auth-label">
+              <span className="r4w-auth-label-text">Fecha de nacimiento</span>
+              <input
+                className="r4w-auth-input"
+                type="date"
+                value={birthdate}
+                onChange={(e) => setBirthdate(e.target.value)}
+                required
+              />
+            </label>
 
-          <label className="r4w-auth-label">
-            Contraseña
-            <input
-              className="r4w-auth-input"
-              type="password"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              minLength={6}
-            />
-          </label>
+            <label className="r4w-auth-label">
+              <span className="r4w-auth-label-text">Contraseña</span>
+              <div className="r4w-auth-input-wrapper">
+                <input
+                  className="r4w-auth-input"
+                  type={showPassword ? "text" : "password"}
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  placeholder="Mínimo 6 caracteres"
+                  minLength={6}
+                  required
+                />
+                <button
+                  type="button"
+                  className="r4w-auth-password-toggle"
+                  onClick={() => setShowPassword(!showPassword)}
+                  aria-label={showPassword ? "Ocultar contraseña" : "Mostrar contraseña"}
+                >
+                  {showPassword ? "👁️" : "👁️‍🗨️"}
+                </button>
+              </div>
+            </label>
 
-          <label className="r4w-auth-label">
-            Repite la contraseña
-            <input
-              className="r4w-auth-input"
-              type="password"
-              value={password2}
-              onChange={(e) => setPassword2(e.target.value)}
-              minLength={6}
-            />
-          </label>
+            <label className="r4w-auth-label">
+              <span className="r4w-auth-label-text">Repite la contraseña</span>
+              <div className="r4w-auth-input-wrapper">
+                <input
+                  className="r4w-auth-input"
+                  type={showPassword2 ? "text" : "password"}
+                  value={password2}
+                  onChange={(e) => setPassword2(e.target.value)}
+                  placeholder="Repite tu contraseña"
+                  minLength={6}
+                  required
+                />
+                <button
+                  type="button"
+                  className="r4w-auth-password-toggle"
+                  onClick={() => setShowPassword2(!showPassword2)}
+                  aria-label={showPassword2 ? "Ocultar contraseña" : "Mostrar contraseña"}
+                >
+                  {showPassword2 ? "👁️" : "👁️‍🗨️"}
+                </button>
+              </div>
+            </label>
+          </div>
 
           {errorMsg && <p className="r4w-auth-error">{errorMsg}</p>}
 
           <button
             type="submit"
-            className="r4w-primary-btn"
+            className="r4w-primary-btn r4w-auth-submit"
             disabled={loading}
           >
             {loading ? "Creando acceso..." : "Crear acceso y empezar 🚀"}

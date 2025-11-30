@@ -9,8 +9,10 @@ import { useWishes } from "../hooks/useWishes";
 
 export default function TopNav() {
   const router = useRouter();
-  const { user, profile, isReady, logout } = useUser() as any;
-  const { wishes } = useWishes(user?.id ?? null);
+  const { user, profile, isReady, logout, wishes: userWishes } = useUser() as any;
+  // Solo usar useWishes como fallback si useUser no tiene wishes (evita llamadas duplicadas)
+  const { wishes: wishesFromHook } = useWishes(user?.id && userWishes === undefined ? user.id : null);
+  const wishes = userWishes !== undefined ? userWishes : (wishesFromHook ?? 0);
   const [menuOpen, setMenuOpen] = useState(false);
   
   // Nombre de usuario: primero username del profile (Supabase), luego username_game, luego username del user, si no hay ninguno, "Runner"

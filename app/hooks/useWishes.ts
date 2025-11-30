@@ -111,9 +111,11 @@ export function useWishes(userId: string | null): UseWishesResult {
   useEffect(() => {
     if (!userId) {
       setWishes(DEFAULT_WISHES);
+      setLoading(false);
       return;
     }
 
+    let isMounted = true;
     const load = async () => {
       setLoading(true);
       try {
@@ -122,6 +124,8 @@ export function useWishes(userId: string | null): UseWishesResult {
           .select("wishes")
           .eq("id", userId)
           .single();
+
+        if (!isMounted) return;
 
         if (error) {
           console.warn("No se han podido cargar los wishes:", error.message);
@@ -132,11 +136,17 @@ export function useWishes(userId: string | null): UseWishesResult {
           setWishes(data.wishes);
         }
       } finally {
-        setLoading(false);
+        if (isMounted) {
+          setLoading(false);
+        }
       }
     };
 
     load();
+
+    return () => {
+      isMounted = false;
+    };
   }, [userId]);
 
   // 🔄 Guardar en Supabase (si hay usuario)

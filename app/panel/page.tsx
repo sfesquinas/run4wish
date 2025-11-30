@@ -24,6 +24,7 @@ export default function PanelPage() {
   const { user, isReady } = useUser() as any;
 
   // 🔁 Datos del usuario
+  // Solo cargar datos si hay usuario para evitar llamadas innecesarias
   const { races, loading, refresh } = useUserRaces(user?.email ?? null);
   const { streak, loading: streakLoading } = useStreak();
   const { wishes, loading: wishesLoading } = useWishes(user?.id ?? null);

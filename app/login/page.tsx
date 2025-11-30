@@ -11,6 +11,7 @@ export default function LoginPage() {
   const { setWishes } = useWishes(null); // en login aún no tenemos userId
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
 
@@ -107,14 +108,24 @@ export default function LoginPage() {
 
             <label className="r4w-auth-label">
               <span className="r4w-auth-label-text">Contraseña</span>
-              <input
-                className="r4w-auth-input"
-                type="password"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                placeholder="Tu contraseña"
-                required
-              />
+              <div className="r4w-auth-input-wrapper">
+                <input
+                  className="r4w-auth-input"
+                  type={showPassword ? "text" : "password"}
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  placeholder="Tu contraseña"
+                  required
+                />
+                <button
+                  type="button"
+                  className="r4w-auth-password-toggle"
+                  onClick={() => setShowPassword(!showPassword)}
+                  aria-label={showPassword ? "Ocultar contraseña" : "Mostrar contraseña"}
+                >
+                  {showPassword ? "👁️" : "👁️‍🗨️"}
+                </button>
+              </div>
             </label>
           </div>
 
