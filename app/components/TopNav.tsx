@@ -58,28 +58,17 @@ export default function TopNav() {
             )}
           </div>
 
-          {/* Zona derecha: usuario y wishes alineados a la derecha */}
-          <div className="r4w-topnav-right">
-            {user ? (
-              <>
-                <div className="r4w-topnav-user">
-                  <span className="r4w-topnav-user-name">{displayName} ✨</span>
-                </div>
-                <div className="r4w-topnav-wishes">
-                  Wishes:&nbsp;<span>{wishes}</span>
-                </div>
-              </>
-            ) : (
-              <div className="r4w-topnav-auth">
-                <Link href="/login" className="r4w-topnav-link">
-                  Iniciar sesión
-                </Link>
-                <Link href="/registro" className="r4w-topnav-link">
-                  Crear acceso
-                </Link>
+          {/* Zona derecha: usuario y wishes alineados a la derecha (solo si hay usuario) */}
+          {user && (
+            <div className="r4w-topnav-right">
+              <div className="r4w-topnav-user">
+                <span className="r4w-topnav-user-name">{displayName} ✨</span>
               </div>
-            )}
-          </div>
+              <div className="r4w-topnav-wishes">
+                Wishes:&nbsp;<span>{wishes}</span>
+              </div>
+            </div>
+          )}
         </div>
 
         {/* MENÚ DESPLEGABLE EN OVERLAY */}

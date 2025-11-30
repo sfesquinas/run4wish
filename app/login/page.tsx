@@ -92,32 +92,37 @@ export default function LoginPage() {
         </p>
 
         <form className="r4w-auth-form" onSubmit={handleSubmit}>
-          <label className="r4w-auth-label">
-            Email
-            <input
-              className="r4w-auth-input"
-              type="email"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              placeholder="tucorreo@email.com"
-            />
-          </label>
+          <div className="r4w-auth-fields">
+            <label className="r4w-auth-label">
+              <span className="r4w-auth-label-text">Email</span>
+              <input
+                className="r4w-auth-input"
+                type="email"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                placeholder="tucorreo@email.com"
+                required
+              />
+            </label>
 
-          <label className="r4w-auth-label">
-            Contraseña
-            <input
-              className="r4w-auth-input"
-              type="password"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-            />
-          </label>
+            <label className="r4w-auth-label">
+              <span className="r4w-auth-label-text">Contraseña</span>
+              <input
+                className="r4w-auth-input"
+                type="password"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                placeholder="Tu contraseña"
+                required
+              />
+            </label>
+          </div>
 
           {errorMsg && <p className="r4w-auth-error">{errorMsg}</p>}
 
           <button
             type="submit"
-            className="r4w-primary-btn"
+            className="r4w-primary-btn r4w-auth-submit"
             disabled={loading}
           >
             {loading ? "Entrando..." : "Entrar en Run4Wish 🚀"}
