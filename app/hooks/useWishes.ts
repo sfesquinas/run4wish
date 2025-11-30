@@ -111,11 +111,9 @@ export function useWishes(userId: string | null): UseWishesResult {
   useEffect(() => {
     if (!userId) {
       setWishes(DEFAULT_WISHES);
-      setLoading(false);
       return;
     }
 
-    let isMounted = true;
     const load = async () => {
       setLoading(true);
       try {
@@ -124,8 +122,6 @@ export function useWishes(userId: string | null): UseWishesResult {
           .select("wishes")
           .eq("id", userId)
           .single();
-
-        if (!isMounted) return;
 
         if (error) {
           console.warn("No se han podido cargar los wishes:", error.message);
@@ -136,17 +132,25 @@ export function useWishes(userId: string | null): UseWishesResult {
           setWishes(data.wishes);
         }
       } finally {
-        if (isMounted) {
-          setLoading(false);
-        }
+        setLoading(false);
       }
     };
 
     load();
 
-    return () => {
-      isMounted = false;
+    // Escuchar eventos de actualización de wishes desde otros componentes
+    const handleWishesUpdate = (event: CustomEvent) => {
+      if (event.detail?.wishes !== undefined) {
+        setWishes(event.detail.wishes);
+      }
     };
+
+    if (typeof window !== "undefined") {
+      window.addEventListener("r4w-wishes-updated", handleWishesUpdate as EventListener);
+      return () => {
+        window.removeEventListener("r4w-wishes-updated", handleWishesUpdate as EventListener);
+      };
+    }
   }, [userId]);
 
   // 🔄 Guardar en Supabase (si hay usuario)
@@ -161,6 +165,12 @@ export function useWishes(userId: string | null): UseWishesResult {
 
     if (error) {
       console.error("Error actualizando wishes:", error.message);
+      return;
+    }
+
+    // Disparar evento personalizado para sincronizar otros componentes
+    if (typeof window !== "undefined") {
+      window.dispatchEvent(new CustomEvent("r4w-wishes-updated", { detail: { wishes: newWishes } }));
     }
   };
 
@@ -170,7 +180,7 @@ export function useWishes(userId: string | null): UseWishesResult {
   };
 
   const subtractWishes = async (amount: number) => {
-    const next = Math.max(0, wishes - amount); // No permitir valores negativos
+    const next = Math.max(0, wishes - amount);
     await persist(next);
   };
 

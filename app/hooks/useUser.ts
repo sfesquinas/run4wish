@@ -11,8 +11,6 @@ type R4WProfile = {
   username: string | null;
   birthdate: string | null;
   wishes: number | null;
-  country: string | null;
-  avatar_id: string | null;
 };
 
 // Devolvemos tipos muy abiertos (any) para no romper nada existente
@@ -74,33 +72,10 @@ export function useUser() {
     const {
       data: { subscription },
     } = supabase.auth.onAuthStateChange(
-      async (_event: AuthChangeEvent, session: Session | null) => {
+      (_event: AuthChangeEvent, session: Session | null) => {
         if (!isMounted) return;
         const currentUser = session?.user ?? null;
         setUser(currentUser);
-
-        // Recargar el perfil cuando cambia la sesión (login/logout)
-        if (currentUser?.id) {
-          const { data: profileData, error: profileError } = await supabase
-            .from("r4w_profiles")
-            .select("*")
-            .eq("id", currentUser.id)
-            .single();
-
-          if (!isMounted) return;
-
-          if (!profileError && profileData) {
-            setProfile(profileData as R4WProfile);
-            setWishes(profileData.wishes ?? 0);
-          } else {
-            setProfile(null);
-            setWishes(0);
-          }
-        } else {
-          // Si no hay usuario (logout), limpiar perfil
-          setProfile(null);
-          setWishes(0);
-        }
       }
     );
 
@@ -117,6 +92,28 @@ export function useUser() {
     setWishes(0);
   };
 
+  const refreshProfile = async () => {
+    if (!user?.id) return;
+
+    // Refrescar perfil de r4w_profiles
+    const { data: profileData, error } = await supabase
+      .from("r4w_profiles")
+      .select("*")
+      .eq("id", user.id)
+      .single();
+
+    if (!error && profileData) {
+      setProfile(profileData as R4WProfile);
+      setWishes(profileData.wishes ?? 0);
+    }
+
+    // Refrescar usuario y su metadata (incluye username_game)
+    const { data: { user: authUser } } = await supabase.auth.getUser();
+    if (authUser) {
+      setUser(authUser);
+    }
+  };
+
   return {
     user,
     profile,
@@ -127,5 +124,6 @@ export function useUser() {
     isReady: !loading,
     loading,
     logout,
+    refreshProfile,
   };
 }

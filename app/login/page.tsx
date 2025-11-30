@@ -93,47 +93,42 @@ export default function LoginPage() {
         </p>
 
         <form className="r4w-auth-form" onSubmit={handleSubmit}>
-          <div className="r4w-auth-fields">
-            <label className="r4w-auth-label">
-              <span className="r4w-auth-label-text">Email</span>
+          <label className="r4w-auth-label">
+            Email
+            <input
+              className="r4w-auth-input"
+              type="email"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              placeholder="tucorreo@email.com"
+            />
+          </label>
+
+          <label className="r4w-auth-label">
+            Contraseña
+            <div className="r4w-auth-password-wrapper">
               <input
                 className="r4w-auth-input"
-                type="email"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                placeholder="tucorreo@email.com"
-                required
+                type={showPassword ? "text" : "password"}
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
               />
-            </label>
-
-            <label className="r4w-auth-label">
-              <span className="r4w-auth-label-text">Contraseña</span>
-              <div className="r4w-auth-input-wrapper">
-                <input
-                  className="r4w-auth-input"
-                  type={showPassword ? "text" : "password"}
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  placeholder="Tu contraseña"
-                  required
-                />
-                <button
-                  type="button"
-                  className="r4w-auth-password-toggle"
-                  onClick={() => setShowPassword(!showPassword)}
-                  aria-label={showPassword ? "Ocultar contraseña" : "Mostrar contraseña"}
-                >
-                  {showPassword ? "👁️" : "👁️‍🗨️"}
-                </button>
-              </div>
-            </label>
-          </div>
+              <button
+                type="button"
+                className="r4w-auth-password-toggle"
+                onClick={() => setShowPassword(!showPassword)}
+                aria-label={showPassword ? "Ocultar contraseña" : "Mostrar contraseña"}
+              >
+                {showPassword ? "👁️" : "👁️‍🗨️"}
+              </button>
+            </div>
+          </label>
 
           {errorMsg && <p className="r4w-auth-error">{errorMsg}</p>}
 
           <button
             type="submit"
-            className="r4w-primary-btn r4w-auth-submit"
+            className="r4w-primary-btn"
             disabled={loading}
           >
             {loading ? "Entrando..." : "Entrar en Run4Wish 🚀"}

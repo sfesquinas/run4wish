@@ -1,13 +1,18 @@
 // app/pregunta/page.tsx
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useMemo } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import confetti from "canvas-confetti";
 import { useWishes } from "../hooks/useWishes";
 import { useRaceProgress } from "../hooks/useRaceProgress";
 import { useStreak } from "../hooks/useStreak";
 import { useUser } from "../hooks/useUser";
+import { useDailyQuestion } from "../hooks/useDailyQuestion";
+import { getQuestionMessage, formatTimeToHHMM } from "../lib/questionHelpers";
+import { calculateUserAdvance } from "../lib/simulatedRunners";
+import { updateNextDaySchedule } from "../lib/userSchedule";
 
 type Option = {
   id: number;
@@ -15,23 +20,66 @@ type Option = {
   text: string;
 };
 
-const QUESTION_TEXT =
+// Fallback para cuando no hay pregunta disponible
+const FALLBACK_QUESTION_TEXT =
   "Si quieres mejorar tu constancia en Run4Wish, ¿qué es lo más importante?";
 
-const OPTIONS: Option[] = [
+const FALLBACK_OPTIONS: Option[] = [
   { id: 0, label: "A", text: "Responder solo cuando te apetezca" },
   { id: 1, label: "B", text: "Entrar cada día aunque sea 1 minuto" },
   { id: 2, label: "C", text: "Esperar al último día para responder todo" },
 ];
 
-const CORRECT_OPTION_ID = 1;
+const FALLBACK_CORRECT_OPTION_ID = 1;
 
 export default function PreguntaPage() {
+  const router = useRouter();
   const { user } = useUser() as any;
 
-  const { wishes, subtractWishes } = useWishes(user?.id ?? null);
+  const { wishes, setWishes } = useWishes(user?.id ?? null);
   const { answeredToday, markAnsweredToday } = useRaceProgress("r7", 7);
   const { registerCorrectAnswer } = useStreak();
+  
+  // Obtener la pregunta del día desde Supabase
+  const { 
+    question: dailyQuestion, 
+    loading: questionLoading, 
+    error: questionError,
+    windowState,
+    windowInfo 
+  } = useDailyQuestion("7d_mvp");
+
+  // Convertir las opciones de Supabase al formato que usa la UI
+  const options: Option[] = useMemo(() => {
+    if (dailyQuestion && dailyQuestion.options.length > 0) {
+      return dailyQuestion.options.map((opt, index) => ({
+        id: index,
+        label: String.fromCharCode(65 + index), // A, B, C, D...
+        text: opt,
+      }));
+    }
+    return FALLBACK_OPTIONS;
+  }, [dailyQuestion]);
+
+  // Determinar cuál es la opción correcta
+  const correctOptionId = useMemo(() => {
+    if (dailyQuestion) {
+      // Buscar el índice de la opción correcta en el array
+      const correctIndex = dailyQuestion.options.findIndex(
+        (opt) => opt === dailyQuestion.correctOption
+      );
+      return correctIndex >= 0 ? correctIndex : FALLBACK_CORRECT_OPTION_ID;
+    }
+    return FALLBACK_CORRECT_OPTION_ID;
+  }, [dailyQuestion]);
+
+  // Texto de la pregunta
+  const questionText = dailyQuestion?.question || FALLBACK_QUESTION_TEXT;
+  
+  // Ventana horaria
+  const windowText = dailyQuestion
+    ? `${formatTimeToHHMM(dailyQuestion.windowStart)} - ${formatTimeToHHMM(dailyQuestion.windowEnd)}`
+    : "09:00 - 00:00";
 
   const [attempts, setAttempts] = useState(0);
   const [selectedOption, setSelectedOption] = useState<number | null>(null);
@@ -41,27 +89,7 @@ export default function PreguntaPage() {
   const [hasAnsweredCorrectly, setHasAnsweredCorrectly] = useState(false);
   const [hasAnswered, setHasAnswered] = useState<boolean>(false);
   const [celebration, setCelebration] =
-    useState<{ positions: number } | null>(null);
-
-  // 🎉 Lanzar confeti suave cuando se muestra el overlay de respuesta correcta
-  useEffect(() => {
-    if (isCorrect && feedback) {
-      // Pequeño delay para que el overlay aparezca primero
-      const timer = setTimeout(() => {
-        confetti({
-          particleCount: 120,
-          spread: 60,
-          origin: { y: 0.5 },
-          colors: ["#22c55e", "#16a34a", "#FF7A1A", "#ffffff", "#ffc065"],
-          gravity: 0.8,
-          ticks: 200,
-          scalar: 0.8,
-        });
-      }, 400); // Delay para que coincida con la animación del overlay
-
-      return () => clearTimeout(timer);
-    }
-  }, [isCorrect, feedback]);
+    useState<{ positions: number; nextDayWindow?: { start: string; end: string } | null } | null>(null);
 
   const handleSubmitAnswer = async () => {
     // si ya se respondió, no hacemos nada.
@@ -82,34 +110,39 @@ export default function PreguntaPage() {
     }
   };
 
-  const handleOptionClick = (option: Option) => {
+  const [showMotivationalModal, setShowMotivationalModal] = useState(false);
+
+  const handleOptionClick = async (option: Option) => {
     // Si ya respondió bien, no hacemos nada
     if (hasAnsweredCorrectly) return;
 
     // Si no hay wishes, no permitimos responder
     if (wishes <= 0) {
-      setSelectedOption(option.id);
-      setIsCorrect(false);
-      setFeedback(
-        "Te has quedado sin wishes para responder esta pregunta. Recarga wishes para seguir jugando."
-      );
       return;
     }
 
     setSelectedOption(option.id);
     setAttempts((a) => a + 1);
-    // 🔥 siempre consume 1 wish, aciertes o falles (y persiste en Supabase)
-    subtractWishes(1);
+    setWishes((w) => w - 1); // 🔥 siempre consume 1 wish, aciertes o falles
 
-    if (option.id === CORRECT_OPTION_ID) {
+    if (option.id === correctOptionId) {
       setIsCorrect(true);
       setHasAnsweredCorrectly(true);
 
-      // Mensaje temporal de puestos adelantados (simulado)
-      const puestosAdelantados = Math.floor(Math.random() * 8) + 3; // entre 3 y 10
+      // 🎉 Confeti al acertar
+      confetti({
+        particleCount: 160,
+        spread: 70,
+        origin: { y: 0.6 },
+        colors: ["#FF7A1A", "#ffffff", "#ffc065"],
+      });
 
       // 🔥 Actualizamos la racha de días al acertar
-      registerCorrectAnswer()
+      registerCorrectAnswer();
+
+      // Calcular puestos adelantados basado en runners simulados
+      const currentDay = dailyQuestion?.dayNumber || 1;
+      const puestosAdelantados = await calculateUserAdvance(true, currentDay);
 
       // Guardamos el avance para mostrarlo en el panel personal
       if (typeof window !== "undefined") {
@@ -125,18 +158,38 @@ export default function PreguntaPage() {
       // Marcamos que hoy ya has respondido en esta carrera
       markAnsweredToday();
 
-      setCelebration({ positions: puestosAdelantados });
+      // Generar y guardar ventana horaria para el día siguiente
+      let nextDayWindowInfo: { start: string; end: string } | null = null;
+      if (user?.id && currentDay < 7) {
+        try {
+          const nextWindow = await updateNextDaySchedule(user.id, currentDay);
+          if (nextWindow) {
+            nextDayWindowInfo = {
+              start: formatTimeToHHMM(nextWindow.windowStart),
+              end: formatTimeToHHMM(nextWindow.windowEnd),
+            };
+          }
+        } catch (err) {
+          console.error("Error generando ventana del día siguiente:", err);
+          // No bloqueamos si falla, simplemente no mostramos la pista
+        }
+      }
 
-      setFeedback(
-        `¡Respuesta correcta! 🎉 Has adelantado ${puestosAdelantados} puestos.`
-
-      );
+      setCelebration({ 
+        positions: puestosAdelantados,
+        nextDayWindow: nextDayWindowInfo 
+      });
     } else {
+      // Respuesta incorrecta: mostrar modal motivador
       setIsCorrect(false);
-      setFeedback(
-        "No es correcta. Cada respuesta consume 1 wish; si te quedan, puedes volver a intentarlo."
-      );
+      setShowMotivationalModal(true);
     }
+  };
+
+  const handleCloseMotivationalModal = () => {
+    setShowMotivationalModal(false);
+    setSelectedOption(null); // Resetear selección para permitir volver a intentar
+    setFeedback(null);
   };
 
   //if (!isReady) {
@@ -177,130 +230,247 @@ export default function PreguntaPage() {
     );
   }
 
+  // 🔒 Estados de error de la pregunta
+  if (questionLoading) {
+    return (
+      <main className="r4w-question-page">
+        <section className="r4w-question-layout">
+          <div className="r4w-question-card-standalone">
+            <div className="r4w-question-status">Cargando pregunta...</div>
+            <h1 className="r4w-question-title" style={{ marginBottom: 8 }}>
+              Preparando tu pregunta del día
+            </h1>
+            <p className="r4w-question-subtitle">
+              Un momento, estamos cargando la pregunta de hoy...
+            </p>
+          </div>
+        </section>
+      </main>
+    );
+  }
+
+  if (questionError === "no_schedule") {
+    return (
+      <main className="r4w-question-page">
+        <section className="r4w-question-layout">
+          <div className="r4w-question-card-standalone">
+            <div className="r4w-question-status">Sin pregunta programada</div>
+            <h1 className="r4w-question-title" style={{ marginBottom: 8 }}>
+              {getQuestionMessage("no_schedule")}
+            </h1>
+            <p className="r4w-question-subtitle" style={{ marginTop: 8 }}>
+              Vuelve mañana para seguir participando en la carrera.
+            </p>
+            <Link href="/panel" className="r4w-primary-btn" style={{ marginTop: 16 }}>
+              Volver a mi panel
+              <span>📊</span>
+            </Link>
+          </div>
+        </section>
+      </main>
+    );
+  }
+
+  if (questionError === "before_window") {
+    const message = getQuestionMessage("before_window", windowInfo || undefined);
+    
+    return (
+      <main className="r4w-question-page">
+        <section className="r4w-question-layout">
+          <div className="r4w-question-card-standalone">
+            <div className="r4w-question-status">⏱ Ventana aún no abierta</div>
+            <h1 className="r4w-question-title" style={{ marginBottom: 8 }}>
+              {message}
+            </h1>
+            <p className="r4w-question-subtitle" style={{ marginTop: 8 }}>
+              La pregunta estará disponible en ese horario. Vuelve entonces para responder.
+            </p>
+            <Link href="/panel" className="r4w-primary-btn" style={{ marginTop: 16 }}>
+              Volver a mi panel
+              <span>📊</span>
+            </Link>
+          </div>
+        </section>
+      </main>
+    );
+  }
+
+  if (questionError === "after_window") {
+    return (
+      <main className="r4w-question-page">
+        <section className="r4w-question-layout">
+          <div className="r4w-question-card-standalone">
+            <div className="r4w-question-status">⏱ Ventana cerrada</div>
+            <h1 className="r4w-question-title" style={{ marginBottom: 8 }}>
+              {getQuestionMessage("after_window")}
+            </h1>
+            <p className="r4w-question-subtitle" style={{ marginTop: 8 }}>
+              La ventana horaria de hoy ya ha finalizado. Mañana tendrás una nueva oportunidad.
+            </p>
+            <Link href="/panel" className="r4w-primary-btn" style={{ marginTop: 16 }}>
+              Volver a mi panel
+              <span>📊</span>
+            </Link>
+          </div>
+        </section>
+      </main>
+    );
+  }
+
+  if (questionError === "error_carga") {
+    return (
+      <main className="r4w-question-page">
+        <section className="r4w-question-layout">
+          <div className="r4w-question-card-standalone">
+            <div className="r4w-question-status">Error al cargar</div>
+            <h1 className="r4w-question-title" style={{ marginBottom: 8 }}>
+              {getQuestionMessage("error_carga")}
+            </h1>
+            <p className="r4w-question-subtitle" style={{ marginTop: 8 }}>
+              Por favor, intenta recargar la página o vuelve más tarde.
+            </p>
+            <Link href="/panel" className="r4w-primary-btn" style={{ marginTop: 16 }}>
+              Volver a mi panel
+              <span>📊</span>
+            </Link>
+          </div>
+        </section>
+      </main>
+    );
+  }
+
   return (
     <main className="r4w-question-page">
       <section className="r4w-question-layout">
-        {/* Cabecera con chip de carrera y subtítulo motivador */}
-        <header className="r4w-question-header-new">
-          <div className="r4w-question-header-top">
-            <div className="r4w-question-chip-new">
-              Carrera 7 días · Día {attempts + 1}/7
-            </div>
-            <div className="r4w-question-wishes-badge">
-              🔮 <strong>{wishes}</strong> wishes
-            </div>
-          </div>
-          <h2 className="r4w-question-subtitle-motivator">
-            Cada respuesta te acerca más a tu meta. ¡Sigue adelante! 💪
-          </h2>
-        </header>
-
-        {/* Tarjeta grande para la pregunta */}
-        <div className="r4w-question-card-new">
+        {/* Card de pregunta con borde naranja */}
+        <div className="r4w-question-card-main">
+          {/* Header de la tarjeta */}
           <div className="r4w-question-card-header">
-            <h1 className="r4w-question-card-title">Pregunta del día</h1>
-            <div className="r4w-question-card-time">
-              Ventana activa: 09:00 - 00:00
+            <div className="r4w-question-card-label">Pregunta del día</div>
+            <div className="r4w-question-card-window">
+              VENTANA ACTIVA: {windowText}
             </div>
           </div>
-          
-          <div className="r4w-question-card-body">
-            <p className="r4w-question-card-text">{QUESTION_TEXT}</p>
+
+          {/* Pregunta centrada */}
+          <div className="r4w-question-card-question">{questionText}</div>
+
+          {/* Opciones con cuadrados naranjas */}
+          <div className="r4w-options-grid-new">
+            {options.map((opt) => {
+              const isSelected = selectedOption === opt.id;
+              const isCorrectOption =
+                hasAnsweredCorrectly && opt.id === correctOptionId;
+              const isLocked = hasAnsweredCorrectly || wishes <= 0;
+
+              const classes = [
+                "r4w-option-card-new",
+                isSelected ? "selected" : "",
+                isCorrectOption ? "correct" : "",
+                isLocked ? "locked" : "",
+              ]
+                .filter(Boolean)
+                .join(" ");
+
+              return (
+                <button
+                  key={opt.id}
+                  type="button"
+                  className={classes}
+                  onClick={() => handleOptionClick(opt)}
+                  disabled={isLocked}
+                >
+                  <span className="r4w-option-letter-new">{opt.label}</span>
+                  <span className="r4w-option-text-new">{opt.text}</span>
+                </button>
+              );
+            })}
           </div>
+
+          {/* Texto informativo */}
+          <div className="r4w-question-card-hint">
+            Cada respuesta consume un wish
+          </div>
+
+          {/* CTA para comprar wishes cuando no quedan */}
+          {!hasAnsweredCorrectly && wishes <= 0 && (
+            <div className="r4w-question-buy-wishes">
+              <p className="r4w-question-buy-text">
+                Te has quedado sin wishes para responder esta pregunta.
+              </p>
+              <Link href="/wishes" className="r4w-primary-btn r4w-question-buy-btn">
+                Ir a comprar wishes
+                <span>💸</span>
+              </Link>
+            </div>
+          )}
         </div>
 
-        {/* Opciones como tarjetas grandes clicables */}
-        <div className="r4w-question-options-container">
-          {OPTIONS.map((opt) => {
-            const isSelected = selectedOption === opt.id;
-            const isCorrectOption =
-              hasAnsweredCorrectly && opt.id === CORRECT_OPTION_ID;
+        {/* Modal de celebración cuando acierta */}
+        {celebration && (
+          <div className="r4w-cele-overlay">
+            <div className="r4w-cele-card">
+              <div className="r4w-cele-title">¡Lo has hecho! 🎉</div>
+              <div className="r4w-cele-text">
+                Tu respuesta ha sido correcta y has adelantado{" "}
+                <strong>{celebration.positions}</strong> puestos en la carrera.
+              </div>
+              
+              {/* Pista para mañana */}
+              {celebration.nextDayWindow && (
+                <div className="r4w-cele-next-day-hint">
+                  Pista para mañana: tu pregunta saldrá entre{" "}
+                  <strong>{celebration.nextDayWindow.start}</strong> y{" "}
+                  <strong>{celebration.nextDayWindow.end}</strong> ✨
+                </div>
+              )}
 
-            const classes = [
-              "r4w-question-option-card",
-              isSelected ? "r4w-question-option-selected" : "",
-              isCorrectOption ? "r4w-question-option-correct" : "",
-            ]
-              .filter(Boolean)
-              .join(" ");
-
-            return (
-              <button
-                key={opt.id}
-                type="button"
-                className={classes}
-                onClick={() => handleOptionClick(opt)}
-                disabled={hasAnsweredCorrectly || wishes <= 0}
-              >
-                <div className="r4w-question-option-label">{opt.label}</div>
-                <div className="r4w-question-option-text">{opt.text}</div>
-              </button>
-            );
-          })}
-        </div>
-
-        {/* Nota sutil */}
-        <div className="r4w-question-hint-new">
-          Solo puedes responder una vez. Piensa… pero no demasiado 😉
-        </div>
-
-        {/* CTA para recargar wishes cuando no quedan */}
-        {!hasAnsweredCorrectly && wishes <= 0 && (
-          <div className="r4w-question-no-wishes">
-            <p className="r4w-question-no-wishes-text">
-              Te has quedado sin wishes para esta pregunta.
-            </p>
-            <Link href="/wishes" className="r4w-question-reload-btn">
-              Recargar wishes 💸
-            </Link>
+              <div className="r4w-cele-actions">
+                <button
+                  type="button"
+                  className="r4w-primary-btn r4w-cele-action-btn"
+                  onClick={() => {
+                    setCelebration(null);
+                    router.push("/ranking");
+                  }}
+                >
+                  Ver mi ranking
+                  <span>📈</span>
+                </button>
+                <button
+                  type="button"
+                  className="r4w-secondary-btn r4w-cele-action-btn"
+                  onClick={() => {
+                    setCelebration(null);
+                    router.push("/panel");
+                  }}
+                >
+                  Ver mi panel
+                  <span>📊</span>
+                </button>
+              </div>
+            </div>
           </div>
         )}
 
-        {/* Navegación */}
-        <div className="r4w-question-navigation">
-          <Link href="/panel" className="r4w-question-nav-link">
-            Ver mi panel 📊
-          </Link>
-        </div>
-
-        {/* Overlay de feedback - Respuesta correcta o incorrecta */}
-        {feedback && (isCorrect !== null) && (
-          <div className="r4w-question-overlay">
-            <div className="r4w-question-overlay-backdrop" />
-            <div className={`r4w-question-overlay-card ${isCorrect ? 'r4w-question-overlay-success' : 'r4w-question-overlay-error'}`}>
-              {isCorrect ? (
-                <>
-                  <div className="r4w-question-overlay-icon">🎉</div>
-                  <h2 className="r4w-question-overlay-title">
-                    Respuesta correcta 🎉
-                  </h2>
-                  <p className="r4w-question-overlay-message">
-                    Has adelantado <strong>{celebration?.positions || 0}</strong> puestos
-                  </p>
-                  <p className="r4w-question-overlay-motivator">
-                    ¡Sigue así! Cada día que respondes te acerca más a tu meta. La constancia es tu mejor aliada. 💪
-                  </p>
-                  <Link href="/panel" className="r4w-question-overlay-btn">
-                    Ir a mi posición 📊
-                  </Link>
-                </>
-              ) : (
-                <>
-                  <div className="r4w-question-overlay-icon">💪</div>
-                  <h2 className="r4w-question-overlay-title">
-                    Hoy no has adelantado puestos, pero sigues en carrera 💪
-                  </h2>
-                  <p className="r4w-question-overlay-message">
-                    No te rindas. Mañana es una nueva oportunidad.
-                  </p>
-                  <p className="r4w-question-overlay-motivator">
-                    La constancia es lo que cuenta. Vuelve mañana y sigue sumando días. Cada intento te hace más fuerte. 🚀
-                  </p>
-                  <Link href="/panel" className="r4w-question-overlay-btn">
-                    Volver al panel
-                  </Link>
-                </>
-              )}
+        {/* Modal motivador cuando no acierta */}
+        {showMotivationalModal && (
+          <div className="r4w-cele-overlay">
+            <div className="r4w-cele-card">
+              <div className="r4w-cele-title">¡Sigue intentando! 💪</div>
+              <div className="r4w-cele-text">
+                No te preocupes, cada intento te acerca más a la respuesta correcta. 
+                La constancia es la clave en Run4Wish.
+              </div>
+              <button
+                type="button"
+                className="r4w-primary-btn"
+                style={{ marginTop: 16, width: "100%" }}
+                onClick={handleCloseMotivationalModal}
+              >
+                Volver a intentar
+                <span>🔄</span>
+              </button>
             </div>
           </div>
         )}

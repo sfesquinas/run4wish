@@ -6,36 +6,35 @@ import { useUser } from "./hooks/useUser";
 export default function HomePage() {
   const { user, isReady } = useUser();
 
-if (!isReady) {
-  return (
-    <main className="r4w-home-page">
-      <section className="r4w-home-hero">
-        <p className="r4w-home-subtitle">Cargando Run4Wish…</p>
-      </section>
-    </main>
-  );
-}
-  // Si no hay usuario, solo mostrar opciones de login/registro
+  if (!isReady) {
+    return (
+      <main className="r4w-home-page">
+        <section className="r4w-home-hero">
+          <p className="r4w-home-subtitle">Cargando Run4Wish…</p>
+        </section>
+      </main>
+    );
+  }
+
+  // Si el usuario NO está logueado → diseño minimalista
   if (!user) {
     return (
-      <main className="r4w-home">
-        <section className="r4w-home-card">
-          <div className="r4w-home-left">
-            <div className="r4w-home-ctas">
-              <Link href="/login" className="r4w-primary-btn">
-                Iniciar sesión
-              </Link>
-              <Link href="/registro" className="r4w-secondary-btn">
-                Crear mi acceso
-              </Link>
-            </div>
+      <main className="r4w-home-simple">
+        <section className="r4w-home-simple-content">
+          <div className="r4w-home-simple-ctas">
+            <Link href="/login" className="r4w-primary-btn r4w-home-simple-btn">
+              Iniciar sesión
+            </Link>
+            <Link href="/registro" className="r4w-secondary-btn r4w-home-simple-btn">
+              Registrar nuevo usuario
+            </Link>
           </div>
         </section>
       </main>
     );
   }
 
-  // Si hay usuario, mostrar contenido completo
+  // Si el usuario ESTÁ logueado → redirigir al panel o mostrar contenido completo
   return (
     <main className="r4w-home">
       <section className="r4w-home-card">

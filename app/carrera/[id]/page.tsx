@@ -146,20 +146,30 @@ export default function CarreraDetallePage() {
             <div className="r4w-question-actions">
               <Link
                 href="/pregunta"
-                className="r4w-primary-btn"
-                style={{ opacity: questionAvailable ? 1 : 0.6 }}
+                className={questionAvailable ? "r4w-primary-btn" : "r4w-secondary-btn"}
+                style={questionAvailable ? {} : { opacity: 0.6, cursor: "not-allowed" }}
+                onClick={(e) => {
+                  if (!questionAvailable) {
+                    e.preventDefault();
+                  }
+                }}
               >
                 <span>
                   {questionAvailable
                     ? "Responder pregunta"
-                    : "Pregunta ya respondida hoy"}
+                    : "Respuesta ya respondida"}
                 </span>
-                <span>➜</span>
+                {questionAvailable && <span>➜</span>}
               </Link>
 
-              <Link href="/panel" className="r4w-secondary-btn">
-                Ver mi panel
-                <span>🏁</span>
+              <Link href="/perfil" className="r4w-secondary-btn">
+                Ver mi perfil
+                <span>👤</span>
+              </Link>
+
+              <Link href="/ranking" className="r4w-secondary-btn">
+                Ver ranking
+                <span>📈</span>
               </Link>
             </div>
           </div>
@@ -210,12 +220,6 @@ export default function CarreraDetallePage() {
             <div className="r4w-panel-next-time">
               Cuando la pregunta esté activa, aprovéchala cuanto antes.
             </div>
-          </div>
-          <div style={{ marginTop: 12, textAlign: "right" }}>
-            <Link href="/ranking" className="r4w-secondary-btn">
-              Ver ranking completo
-              <span>📈</span>
-            </Link>
           </div>
         </section>
       </div>

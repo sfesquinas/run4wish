@@ -7,80 +7,47 @@ export function useUserRaces(email: string | null) {
   const [races, setRaces] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
 
-  const fetchRaces = async (abortSignal?: AbortSignal) => {
+  const refresh = async () => {
     if (!email) {
       setRaces([]);
       setLoading(false);
       return;
     }
 
-    setLoading(true);
     try {
-      const res = await fetch("/api/lo-que-sea", {
-        signal: abortSignal,
-      });
+      const res = await fetch("/api/lo-que-sea");
 
       if (!res.ok) {
-        setRaces([]);
-        setLoading(false);
-        return;
+        // La respuesta es una página de error HTML (404, 500, etc.)
+        const errorText = await res.text();
+        console.error("Error al llamar a /api/lo-que-sea:", res.status, errorText);
+        return null; // o lo que tenga sentido devolver
       }
 
       const contentType = res.headers.get("content-type") || "";
       if (!contentType.includes("application/json")) {
-        setRaces([]);
-        setLoading(false);
-        return;
+        const errorText = await res.text();
+        console.error(
+          "Respuesta no JSON desde /api/lo-que-sea:",
+          contentType,
+          errorText
+        );
+        return null;
       }
 
       const data = await res.json();
+      // seguir igual que antes con `data`
       setRaces(data.races || []);
+    } catch (err) {
+      console.error("Error cargando carreras:", err);
+      setRaces([]);
+    } finally {
       setLoading(false);
-    } catch (err: any) {
-      if (err.name === 'AbortError') {
-        // Timeout - silencioso
-        setRaces([]);
-        setLoading(false);
-      } else {
-        console.error("Error cargando carreras:", err);
-        setRaces([]);
-        setLoading(false);
-      }
     }
   };
 
-  const refresh = () => {
-    fetchRaces();
-  };
-
   useEffect(() => {
-    let isMounted = true;
-    let controller: AbortController | null = null;
-    let timeoutId: NodeJS.Timeout | null = null;
-
-    const loadRaces = async () => {
-      controller = new AbortController();
-      timeoutId = setTimeout(() => controller!.abort(), 2000); // 2 segundos timeout
-      
-      await fetchRaces(controller.signal);
-      
-      if (timeoutId) {
-        clearTimeout(timeoutId);
-      }
-    };
-
-    loadRaces();
-
-    return () => {
-      isMounted = false;
-      if (controller) {
-        controller.abort();
-      }
-      if (timeoutId) {
-        clearTimeout(timeoutId);
-      }
-    };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+    refresh();
   }, [email]);
 
   return { races, loading, refresh };

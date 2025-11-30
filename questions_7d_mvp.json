@@ -1,0 +1,68 @@
+{
+  "questions": [
+    {
+      "race_type": "7d_mvp",
+      "day_number": 1,
+      "question": "Si el lunes es el primer día de la semana, ¿qué día es el tercero?",
+      "options": ["Martes", "Miércoles", "Jueves"],
+      "correct_option": "Miércoles",
+      "category": "logica",
+      "difficulty": "muy_facil"
+    },
+    {
+      "race_type": "7d_mvp",
+      "day_number": 2,
+      "question": "En Run4Wish, ¿cuántos wishes consumes al responder una pregunta, aciertes o falles?",
+      "options": ["0 wishes", "1 wish", "2 wishes"],
+      "correct_option": "1 wish",
+      "category": "r4w",
+      "difficulty": "facil"
+    },
+    {
+      "race_type": "7d_mvp",
+      "day_number": 3,
+      "question": "Si tienes 5 deseos y gastas 2, ¿cuántos deseos te quedan?",
+      "options": ["2", "3", "4"],
+      "correct_option": "3",
+      "category": "numeros",
+      "difficulty": "muy_facil"
+    },
+    {
+      "race_type": "7d_mvp",
+      "day_number": 4,
+      "question": "En Run4Wish, ¿qué es más importante para avanzar en la carrera?",
+      "options": ["Responder solo cuando te apetezca", "Responder cada día dentro de la ventana horaria", "Esperar al último día para responder todo"],
+      "correct_option": "Responder cada día dentro de la ventana horaria",
+      "category": "r4w",
+      "difficulty": "facil"
+    },
+    {
+      "race_type": "7d_mvp",
+      "day_number": 5,
+      "question": "¿Cuál es la capital de Francia?",
+      "options": ["Londres", "París", "Madrid"],
+      "correct_option": "París",
+      "category": "general",
+      "difficulty": "muy_facil"
+    },
+    {
+      "race_type": "7d_mvp",
+      "day_number": 6,
+      "question": "¿Qué símbolo se usa normalmente para indicar 'play' o reproducir?",
+      "options": ["Un cuadrado", "Un triángulo", "Un círculo"],
+      "correct_option": "Un triángulo",
+      "category": "cotidiano",
+      "difficulty": "facil"
+    },
+    {
+      "race_type": "7d_mvp",
+      "day_number": 7,
+      "question": "Si A viene antes que B, y B viene antes que C, ¿qué letra viene después de B?",
+      "options": ["A", "B", "C"],
+      "correct_option": "C",
+      "category": "logica",
+      "difficulty": "media"
+    }
+  ]
+}
+

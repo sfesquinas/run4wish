@@ -9,15 +9,16 @@ import { useWishes } from "../hooks/useWishes";
 
 export default function TopNav() {
   const router = useRouter();
-  const { user, profile, isReady, logout, wishes: userWishes } = useUser() as any;
-  // Solo usar useWishes como fallback si useUser no tiene wishes (evita llamadas duplicadas)
-  const { wishes: wishesFromHook } = useWishes(user?.id && userWishes === undefined ? user.id : null);
-  const wishes = userWishes !== undefined ? userWishes : (wishesFromHook ?? 0);
+  const { user, profile, isReady, logout } = useUser() as any;
+  const { wishes } = useWishes(user?.id ?? null);
   const [menuOpen, setMenuOpen] = useState(false);
   
-  // Nombre de usuario: primero username del profile (Supabase), luego username_game, luego username del user, si no hay ninguno, "Runner"
+  // Nombre de usuario: primero username_game (de user_metadata), luego username del user, luego username del profile, si no hay ninguno, "Runner"
   const displayName =
-    profile?.username || user?.username_game || user?.username || "Runner";
+    (user?.user_metadata?.username_game as string) || 
+    user?.username || 
+    profile?.username || 
+    "Runner";
   
   const handleNavigate = (path: string) => {
     setMenuOpen(false);
@@ -27,49 +28,69 @@ export default function TopNav() {
   return (
     <header className="r4w-topbar">
       <div className="r4w-topnav">
-        <div className="r4w-topnav-inner">
-          {/* Logo / brand + botón menú: agrupados a la izquierda */}
-          <div className="r4w-topnav-left">
+        <div className={user ? "r4w-topnav-inner" : "r4w-topnav-inner-centered"}>
+          {user ? (
+            <>
+              {/* Logo a la izquierda: abre el menú */}
+              <button
+                type="button"
+                className="r4w-topnav-logo-btn"
+                onClick={() => setMenuOpen((open) => !open)}
+              >
+                <div className="r4w-topnav-logo">
+                  <img
+                    src="/r4w-icon.png"
+                    alt="Run4Wish"
+                    width={32}
+                    height={32}
+                  />
+                </div>
+              </button>
+
+              {/* Texto Run4Wish centrado: abre el menú */}
+              <button
+                type="button"
+                className="r4w-topnav-center r4w-topnav-center-btn"
+                onClick={() => setMenuOpen((open) => !open)}
+              >
+                <div className="r4w-topnav-text">
+                  RUN<span className="r4w-topnav-4">4</span>WISH
+                </div>
+              </button>
+
+              {/* Zona derecha: usuario y wishes */}
+              <div className="r4w-topnav-right">
+                <button
+                  type="button"
+                  className="r4w-topnav-user r4w-topnav-user-btn"
+                  onClick={() => setMenuOpen((open) => !open)}
+                >
+                  <span className="r4w-topnav-user-name">{displayName}</span>
+                </button>
+                <div className="r4w-topnav-wishes">
+                  Wishes:&nbsp;<span>{wishes}</span>
+                </div>
+              </div>
+            </>
+          ) : (
+            /* Logo y nombre centrados cuando no hay usuario */
             <button
               type="button"
-              className="r4w-topnav-brand"
+              className="r4w-topnav-brand-centered"
               onClick={() => router.push("/")}
             >
               <div className="r4w-topnav-logo">
                 <img
                   src="/r4w-icon.png"
                   alt="Run4Wish"
-                  width={32}
-                  height={32}
+                  width={36}
+                  height={36}
                 />
               </div>
               <div className="r4w-topnav-text">
                 RUN<span className="r4w-topnav-4">4</span>WISH
               </div>
             </button>
-
-            {/* Botón del menú justo después del nombre (solo si hay usuario) */}
-            {user && (
-              <button
-                type="button"
-                onClick={() => setMenuOpen((open) => !open)}
-                className="r4w-menu-trigger"
-              >
-                ▾
-              </button>
-            )}
-          </div>
-
-          {/* Zona derecha: usuario y wishes alineados a la derecha (solo si hay usuario) */}
-          {user && (
-            <div className="r4w-topnav-right">
-              <div className="r4w-topnav-user">
-                <span className="r4w-topnav-user-name">{displayName} ✨</span>
-              </div>
-              <div className="r4w-topnav-wishes">
-                Wishes:&nbsp;<span>{wishes}</span>
-              </div>
-            </div>
           )}
         </div>
 
@@ -112,7 +133,7 @@ export default function TopNav() {
                 className="r4w-menu-item"
                 onClick={() => handleNavigate("/perfil")}
               >
-                Editar perfil
+                Mi Perfil
               </button>
 
               <hr className="r4w-menu-divider" />
@@ -125,8 +146,7 @@ export default function TopNav() {
                   if (logout) {
                     await logout();
                   }
-                  // Redirigir a la pantalla de login después de cerrar sesión
-                  router.push("/login");
+                  router.push("/");
                 }}
               >
                 Cerrar sesión

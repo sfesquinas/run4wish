@@ -48,14 +48,10 @@ export default function WishesPage() {
           <header className="r4w-panel-header">
             <div>
               <h1 className="r4w-panel-title">Tienda de wishes ✨</h1>
-              <p className="r4w-panel-tagline">
-                Tus wishes son la energía con la que sigues corriendo por tus
-                deseos. Cada respuesta consume 1 wish.
-              </p>
             </div>
 
             <div className="r4w-panel-chip r4w-panel-chip-center">
-              Wishes actuales: <strong>{wishes}</strong>
+              Wishes: <strong>{wishes}</strong>
             </div>
           </header>
 
@@ -63,62 +59,42 @@ export default function WishesPage() {
             {/* Pack demo gratis (solo MVP) */}
             <div className="r4w-wishes-card">
               <div className="r4w-wishes-label">MVP · demo</div>
-              <h2 className="r4w-wishes-title">Recarga rápida · +5 wishes</h2>
-              <p className="r4w-wishes-text">
-                Úsalo para hacer pruebas mientras construimos la pasarela de
-                pago real.
-              </p>
+              <h2 className="r4w-wishes-title">+5 wishes</h2>
               <button
                 type="button"
                 className="r4w-primary-btn"
                 onClick={() => handleAdd(5)}
                 disabled={loading}
               >
-                Añadir +5 wishes ⚡
+                Añadir ⚡
               </button>
             </div>
 
             {/* Pack 10 */}
             <div className="r4w-wishes-card">
               <div className="r4w-wishes-label">Próximamente</div>
-              <h2 className="r4w-wishes-title">
-                Pack constancia · +10 wishes
-              </h2>
-              <p className="r4w-wishes-text">
-                Ideal para una carrera corta o para recuperar días perdidos.
-              </p>
+              <h2 className="r4w-wishes-title">+10 wishes</h2>
               <button type="button" className="r4w-secondary-btn" disabled>
-                Disponible en la siguiente versión
+                Próximamente
               </button>
             </div>
 
             {/* Pack 20 */}
             <div className="r4w-wishes-card">
               <div className="r4w-wishes-label">Próximamente</div>
-              <h2 className="r4w-wishes-title">Pack maratón · +20 wishes</h2>
-              <p className="r4w-wishes-text">
-                Para quienes quieren estar en varias carreras a la vez.
-              </p>
+              <h2 className="r4w-wishes-title">+20 wishes</h2>
               <button type="button" className="r4w-secondary-btn" disabled>
-                Disponible en la siguiente versión
+                Próximamente
               </button>
             </div>
           </div>
 
-          <div
-            style={{
-              marginTop: 24,
-              fontSize: 12,
-              color: "var(--r4w-text-muted)",
-            }}
-          >
-            🎂 Anotación: en la versión siguiente, si tu cumpleaños coincide con
-            una carrera activa, te regalaremos un bonus de wishes extra.
-          </div>
-
-          <div style={{ marginTop: 16 }}>
+          <div className="r4w-wishes-nav">
             <Link href="/panel" className="r4w-secondary-btn">
-              Volver a mi panel <span>📊</span>
+              Ver mi panel <span>📊</span>
+            </Link>
+            <Link href="/carreras" className="r4w-secondary-btn">
+              Ir a carreras <span>🏁</span>
             </Link>
           </div>
         </div>

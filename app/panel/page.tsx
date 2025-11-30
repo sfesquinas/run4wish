@@ -4,6 +4,7 @@
 import { useState, useEffect } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
+import { useRouter as useRouterForNav } from "next/navigation";
 import confetti from "canvas-confetti";
 
 import { useStreak } from "../hooks/useStreak";
@@ -11,6 +12,10 @@ import { useUser } from "../hooks/useUser";
 import { useUserRaces } from "../hooks/useUserRaces";
 import { useWishes } from "../hooks/useWishes";
 import { usePreregistrations } from "../hooks/usePreregistrations";
+import { useDailyQuestion } from "../hooks/useDailyQuestion";
+import { useSimulatedRunners, useSimulateDailyProgress } from "../hooks/useSimulatedRunners";
+import { useCombinedRanking } from "../hooks/useCombinedRanking";
+import { useRaceProgress } from "../hooks/useRaceProgress";
 
 type MessageKey = "today" | "nextMove" | "nextRaces" | "fullRanking";
 
@@ -21,14 +26,25 @@ type LastAdvance = {
 
 export default function PanelPage() {
   const router = useRouter();
+  const navRouter = useRouterForNav();
   const { user, isReady } = useUser() as any;
 
   // 🔁 Datos del usuario
-  // Solo cargar datos si hay usuario para evitar llamadas innecesarias
   const { races, loading, refresh } = useUserRaces(user?.email ?? null);
   const { streak, loading: streakLoading } = useStreak();
   const { wishes, loading: wishesLoading } = useWishes(user?.id ?? null);
   const { preregistrations = [] } = usePreregistrations(user?.email ?? null);
+  
+  // 📝 Estado de la pregunta del día
+  const { question: dailyQuestion, loading: questionLoading, error: questionError } = useDailyQuestion("7d_mvp");
+
+  // 🤖 Runners simulados
+  const { initialized: runnersInitialized } = useSimulatedRunners();
+  const { daysPlayed } = useRaceProgress("r7", 7);
+  const { simulated: dailyProgressSimulated } = useSimulateDailyProgress(daysPlayed);
+  
+  // 📊 Ranking combinado (real + simulado)
+  const { ranking: combinedRanking, totalParticipants, userPosition } = useCombinedRanking("r7", "7d_mvp");
 
   const activeRaces = races.filter((r: any) => r.status === "active");
 
@@ -39,7 +55,7 @@ export default function PanelPage() {
 
   // 👤 Nombre para mostrar
   const baseName =
-    (user as any)?.username_game ??
+    (user as any)?.user_metadata?.username_game ??
     (user as any)?.username ??
     (user as any)?.displayName ??
     "Runner";
@@ -98,7 +114,7 @@ export default function PanelPage() {
   if (!isReady) {
     return (
       <main className="r4w-panel-page">
-        <section className="r4w-panel-layout r4w-panel-enter">
+        <section className="r4w-panel-layout">
           <div className="r4w-panel-main">
             <div className="r4w-panel-hello">Cargando tu panel…</div>
           </div>
@@ -108,127 +124,166 @@ export default function PanelPage() {
   }
 
   if (!user) {
-    // No mostrar nada, el useEffect ya redirige a /login
-    return null;
+    return (
+      <main className="r4w-panel-page">
+        <section className="r4w-panel-layout">
+          <div className="r4w-panel-main">
+            <h1 className="r4w-panel-title">Tu panel Run4Wish</h1>
+            <p className="r4w-panel-hello">
+              Para ver tu posición y tus carreras, primero crea tu acceso.
+            </p>
+            <Link href="/registro" className="r4w-primary-btn">
+              Ir a registro ➜
+            </Link>
+          </div>
+        </section>
+      </main>
+    );
   }
 
   const handleOpenMessage = (key: MessageKey) => setOpenMessage(key);
   const handleCloseMessage = () => setOpenMessage(null);
+  
+  const handleNextRacesClose = () => {
+    setOpenMessage(null);
+    router.push("/carreras");
+  };
 
   return (
     <>
       <main className="r4w-panel-page">
-        <div className="r4w-panel-layout r4w-panel-enter">
-          {/* COLUMNA IZQUIERDA: resumen carrera + stats */}
+        <div className="r4w-panel-layout">
+          {/* COLUMNA IZQUIERDA: título + KPIs + Wish Meter + botones */}
           <section className="r4w-panel-main">
-            {/* Header: saludo en una línea */}
-            <header className="r4w-panel-header">
-              <div className="r4w-panel-header-left">
-                <h1 className="r4w-panel-greeting">
-                  Cada día que apareces, te acercas más a tu deseo ✨
-                </h1>
-              </div>
-            </header>
+            {/* Título principal */}
+            <h1 className="r4w-panel-title-main">
+              Cada día que apareces, te acercas más a tu deseo ✨✨
+            </h1>
 
-            {/* Sección de KPIs en cuadrícula 3x2 */}
+            {/* Grid de KPIs 3x2 */}
             <div className="r4w-panel-kpis">
               {/* Fila 1 */}
-              <div className="r4w-panel-kpi-card r4w-kpi-anim-1">
+              <button
+                type="button"
+                className="r4w-panel-kpi-card r4w-panel-kpi-clickable"
+                onClick={() => router.push("/wishes")}
+              >
                 <div className="r4w-panel-kpi-icon">🔮</div>
-                <div className="r4w-panel-kpi-label">Wishes disponibles</div>
-                <div className="r4w-panel-kpi-value">
-                  {wishesLoading ? "…" : wishes}
-                </div>
-              </div>
+                <div className="r4w-panel-kpi-label">WISHES DISPONIBLES</div>
+                <div className="r4w-panel-kpi-value">{wishesLoading ? "…" : wishes}</div>
+              </button>
 
-              <div className="r4w-panel-kpi-card r4w-kpi-anim-2">
+              <div className="r4w-panel-kpi-card">
                 <div className="r4w-panel-kpi-icon">🔥</div>
-                <div className="r4w-panel-kpi-label">Racha actual</div>
+                <div className="r4w-panel-kpi-label">RACHA ACTUAL</div>
                 <div className="r4w-panel-kpi-value">
                   {streakLoading ? "…" : `${streak} día${streak === 1 ? "" : "s"}`}
                 </div>
               </div>
 
-              <div className="r4w-panel-kpi-card r4w-kpi-anim-3">
+              <button
+                type="button"
+                className="r4w-panel-kpi-card r4w-panel-kpi-clickable"
+                onClick={() => router.push("/carreras")}
+              >
                 <div className="r4w-panel-kpi-icon">🏁</div>
-                <div className="r4w-panel-kpi-label">Carreras activas</div>
+                <div className="r4w-panel-kpi-label">CARRERAS ACTIVAS</div>
                 <div className="r4w-panel-kpi-value">{activeRaces.length}</div>
-              </div>
+              </button>
 
               {/* Fila 2 */}
-              <div className="r4w-panel-kpi-card r4w-kpi-anim-4">
+              <button
+                type="button"
+                className="r4w-panel-kpi-card r4w-panel-kpi-clickable"
+                onClick={() => router.push("/ranking")}
+              >
                 <div className="r4w-panel-kpi-icon">📈</div>
-                <div className="r4w-panel-kpi-label">Puestos desde ayer</div>
-                <div className="r4w-panel-kpi-value">
-                  {lastAdvance ? `+${lastAdvance.positions}` : "0"}
-                </div>
-              </div>
+                <div className="r4w-panel-kpi-label">PUESTOS DESDE AYER</div>
+                <div className="r4w-panel-kpi-value">{lastAdvance?.positions || 0}</div>
+              </button>
 
-              <div className="r4w-panel-kpi-card r4w-kpi-anim-5">
+              <div className="r4w-panel-kpi-card">
                 <div className="r4w-panel-kpi-icon">⭐</div>
-                <div className="r4w-panel-kpi-label">Mejor posición</div>
-                <div className="r4w-panel-kpi-value">
-                  {activeRaces.length > 0 
-                    ? `#${Math.min(...activeRaces.map((r: any) => r.position ?? 999))}`
-                    : "—"}
-                </div>
+                <div className="r4w-panel-kpi-label">MEJOR POSICIÓN</div>
+                <div className="r4w-panel-kpi-value">—</div>
               </div>
 
-              <Link href="/carreras" className="r4w-panel-kpi-card r4w-panel-kpi-card-button r4w-kpi-anim-6">
+              <Link href="/carreras" className="r4w-panel-kpi-card r4w-panel-kpi-button">
                 <div className="r4w-panel-kpi-icon">🚀</div>
-                <div className="r4w-panel-kpi-label">Ver carreras</div>
-                <div className="r4w-panel-kpi-value">→</div>
+                <div className="r4w-panel-kpi-label">VER CARRERAS</div>
+                <div className="r4w-panel-kpi-arrow">➜</div>
               </Link>
             </div>
 
             {/* Wish Meter */}
-            <div className="r4w-meter-container">
-              <div className="r4w-meter-header">
-                <h3 className="r4w-meter-title">Wish Meter</h3>
-                <p className="r4w-meter-subtitle">
-                  Cuanta más actividad, más wishes.
-                </p>
-              </div>
+            <div className="r4w-meter-section">
+              <h2 className="r4w-meter-title">Wish Meter</h2>
+              <p className="r4w-meter-subtitle">Cuanta más actividad, más wishes.</p>
               <div className="r4w-meter-bar-container">
-                <div 
-                  className="r4w-meter-bar"
-                  style={{ width: `${Math.min((wishes / 10) * 100, 100)}%` }}
-                />
+                <div className="r4w-meter-bar">
+                  <div 
+                    className="r4w-meter-bar-fill" 
+                    style={{ width: `${Math.min((wishes / 10) * 100, 100)}%` }}
+                  />
+                </div>
                 <div className="r4w-meter-labels">
-                  <span className="r4w-meter-label-min">0</span>
-                  <span className="r4w-meter-label-max">10</span>
+                  <span>0</span>
+                  <span>10</span>
                 </div>
               </div>
-              {wishes >= 10 ? (
-                <>
-                  <div className="r4w-meter-message r4w-meter-message-full">
-                    Tienes energía de sobra para tu próximo deseo ✨
-                  </div>
-                  <Link href="/pregunta" className="r4w-meter-action-btn">
-                    Pregunta de hoy
-                  </Link>
-                </>
-              ) : (
-                <div className="r4w-meter-value">
-                  {wishesLoading ? "…" : wishes} / 10 wishes
+            </div>
+
+            {/* Botón grande de energía */}
+            {wishes >= 10 && (
+              <div className="r4w-panel-energy-card">
+                <div className="r4w-panel-energy-text">
+                  Tienes energía de sobra para tu próximo deseo ✨✨
                 </div>
+              </div>
+            )}
+
+            {/* Estado de pregunta y botón */}
+            <div className="r4w-panel-question-section">
+              {questionLoading ? (
+                <div className="r4w-panel-question-status">
+                  Cargando estado de la pregunta de hoy…
+                </div>
+              ) : questionError === "no_schedule" ? (
+                <div className="r4w-panel-question-status">
+                  ℹ️ Hoy no hay pregunta programada en esta carrera.
+                </div>
+              ) : questionError === "after_window" ? (
+                <div className="r4w-panel-question-status">
+                  ⏱ La ventana de hoy ya se cerró. Mañana tendrás una nueva pregunta.
+                </div>
+              ) : questionError === "before_window" ? (
+                <div className="r4w-panel-question-status r4w-panel-question-status-warning">
+                  ⏱ La ventana se abrirá entre {dailyQuestion?.windowStart.slice(0, 5) || "..."} y {dailyQuestion?.windowEnd.slice(0, 5) || "..."}
+                </div>
+              ) : dailyQuestion ? (
+                <div className="r4w-panel-question-status r4w-panel-question-status-success">
+                  🟢 Pregunta de hoy disponible hasta {dailyQuestion.windowEnd.slice(0, 5)}
+                </div>
+              ) : null}
+
+              {wishes >= 10 && (
+                <Link href="/pregunta" className="r4w-primary-btn r4w-panel-question-btn">
+                  Pregunta de hoy
+                </Link>
               )}
             </div>
           </section>
 
-          {/* COLUMNA DERECHA: mensajes + siguiente movimiento */}
+          {/* COLUMNA DERECHA: mensajes */}
           <section className="r4w-panel-side">
             <h2 className="r4w-panel-side-title">Mensajes Run4Wish</h2>
-            <p className="r4w-panel-quote">
+            <p className="r4w-panel-side-subtitle">
               Recordatorios para que sigas en carrera.
             </p>
 
             {/* Chip de prerreservas */}
-            <div
-              className="r4w-panel-chip r4w-panel-chip-left"
-              style={{ marginBottom: 12 }}
-            >
-              Prerreservas: <strong>{preregCount}</strong>
+            <div className="r4w-panel-prereg-chip">
+              PRERRESERVAS: <strong>{preregCount}</strong>
             </div>
 
             <div className="r4w-message-buttons">
@@ -279,7 +334,7 @@ export default function PanelPage() {
             {/* Chip superior */}
             <div className="r4w-info-chip">
               {openMessage === "today" && "Mensaje de hoy"}
-              {openMessage === "nextMove" && "Siguiente movimiento"}
+              {openMessage === "nextMove" && "Tu siguiente movimiento"}
               {openMessage === "nextRaces" && "Próximas carreras"}
               {openMessage === "fullRanking" && "Ranking completo"}
             </div>
@@ -288,33 +343,40 @@ export default function PanelPage() {
             {openMessage === "today" && (
               <>
                 <h3 className="r4w-info-title">
-                  Aparece cada día y suma puntos ✨
+                  Cada vez que respondes, estás apareciendo por ti ✨
                 </h3>
                 <p className="r4w-info-text">
-                  Cada respuesta suma. No importa si subes mucho o poco; lo importante es que sigas en carrera.
+                  Cada vez que respondes una pregunta, le dices a tu mente:
+                  <strong>“estoy apareciendo por mí y por mi deseo”.</strong>{" "}
+                  No importa si hoy subes mucho o poco en el ranking; lo
+                  importante es que no te salgas de la carrera.
                 </p>
                 <p className="r4w-info-text">
-                  <strong>Tip:</strong> 2 minutos al día. Conviértelo en ritual y tu constancia se dispara sola.
+                  Tip rápido: reserva 2 minutos al día para entrar a Run4Wish.
+                  Si lo conviertes en un mini ritual, tu constancia se dispara
+                  sola.
                 </p>
                 <button
                   type="button"
                   className="r4w-primary-btn r4w-info-close-btn"
                   onClick={handleCloseMessage}
                 >
-                  Hoy sumo puntos 💪
+                  Hoy aparezco por mí 💪
                 </button>
               </>
             )}
 
             {openMessage === "nextMove" && (
               <>
-                <h3 className="r4w-info-title">Siguiente movimiento</h3>
+                <h3 className="r4w-info-title">Tu siguiente movimiento</h3>
                 <p className="r4w-info-text">
-                  Responde la pregunta de hoy y suma puntos. Cada día respondido te acerca más a tu meta.
+                  Comprueba si la pregunta de hoy ya está abierta y respóndela
+                  desde la pantalla de carrera. Cada día respondido es un punto
+                  más a tu favor frente al resto.
                 </p>
                 <p className="r4w-info-text">
                   <span className="r4w-info-highlight">
-                    Ventana: 09:00 - 00:00 (hora local).
+                    Ventana de preguntas: de 09:00 a 00:00 (hora local).
                   </span>
                 </p>
                 <button
@@ -322,7 +384,7 @@ export default function PanelPage() {
                   className="r4w-primary-btn r4w-info-close-btn"
                   onClick={handleCloseMessage}
                 >
-                  Ir a responder 🏃‍♀️
+                  Voy a moverme ahora 🏃‍♀️
                 </button>
               </>
             )}
@@ -331,19 +393,21 @@ export default function PanelPage() {
               <>
                 <h3 className="r4w-info-title">Próximas carreras</h3>
                 <p className="r4w-info-text">
-                  Tienes plaza en <strong>{preregCount} carrera{preregCount !== 1 ? "s" : ""}</strong>. Pronto verás el detalle de cada una.
+                  Ya tienes plaza asegurada en{" "}
+                  <strong>{preregCount} futura(s) carrera(s)</strong>. En las
+                  siguientes versiones podrás ver aquí el detalle de cada una.
                 </p>
                 <p className="r4w-info-text">
                   <span className="r4w-info-highlight">
-                    Gestiona tus preregistros en la sección Carreras.
+                    Puedes gestionar tus preregistros desde la sección Carreras.
                   </span>
                 </p>
                 <button
                   type="button"
                   className="r4w-primary-btn r4w-info-close-btn"
-                  onClick={handleCloseMessage}
+                  onClick={handleNextRacesClose}
                 >
-                  Ver carreras 🚀
+                  Quiero seguir en la carrera 🚀
                 </button>
               </>
             )}
@@ -352,14 +416,15 @@ export default function PanelPage() {
               <>
                 <h3 className="r4w-info-title">Ranking completo</h3>
                 <p className="r4w-info-text">
-                  Ve cómo se mueve tu posición día a día frente al resto de runners.
+                  En el ranking completo verás cómo se mueve tu posición día a
+                  día respecto al resto de runners.
                 </p>
                 <Link
                   href="/ranking"
                   className="r4w-primary-btn r4w-info-close-btn"
                   onClick={handleCloseMessage}
                 >
-                  Ver ranking 📈
+                  Ver mi ranking ahora 📈
                 </Link>
               </>
             )}
