@@ -1,13 +1,13 @@
 // app/api/admin/generate-questions/route.ts
-// Endpoint para generar preguntas usando OpenAI y guardarlas en Supabase
+// Endpoint para generar preguntas usando Groq y guardarlas en Supabase
 // PROTEGIDO: Solo accesible para administradores
 
 import { NextResponse } from "next/server";
 import { NextRequest } from "next/server";
 import { createClient } from "@supabase/supabase-js";
-import OpenAI from "openai";
-import { IA_QUESTION_MASTER_PROMPT } from "../../../lib/aiPrompts";
 import { verifyAdminAuth } from "../../../lib/authHelpers";
+import { groq } from "../../../lib/groqClient";
+import { IA_QUESTION_MASTER_PROMPT } from "../../../lib/aiPrompts";
 
 // Cliente de Supabase (server-side) para operaciones de base de datos
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
@@ -18,17 +18,6 @@ if (!supabaseUrl || !supabaseServiceKey) {
 }
 
 const supabase = createClient(supabaseUrl, supabaseServiceKey);
-
-// Cliente de OpenAI
-const openaiApiKey = process.env.OPENAI_API_KEY;
-
-if (!openaiApiKey) {
-  throw new Error("Falta la variable de entorno OPENAI_API_KEY");
-}
-
-const openai = new OpenAI({
-  apiKey: openaiApiKey,
-});
 
 /**
  * Genera una hora aleatoria entre 09:00 y 20:00 (para que window_end no pase de 21:00)
@@ -89,13 +78,13 @@ export async function POST(request: NextRequest) {
 
       const adminEmail = "email" in auth ? auth.email : undefined;
       console.log("[IA ADMIN] acceso permitido a generate-questions", adminEmail);
-      console.log(`🚀 Iniciando generación de preguntas con IA... (Admin: ${adminEmail})`);
+      console.log(`🚀 Iniciando generación de preguntas con Groq... (Admin: ${adminEmail})`);
     }
 
-    // 1. Llamar a OpenAI
-    console.log("📝 Llamando a OpenAI...");
-    const completion = await openai.chat.completions.create({
-      model: "gpt-4o-mini", // Usa gpt-4o-mini para costos más bajos, o gpt-4o si prefieres mejor calidad
+    // 1. Llamar a Groq
+    console.log("📝 Llamando a Groq...");
+    const completion = await groq.chat.completions.create({
+      model: "llama3-8b-instant",
       messages: [
         {
           role: "system",
@@ -106,16 +95,16 @@ export async function POST(request: NextRequest) {
           content: IA_QUESTION_MASTER_PROMPT,
         },
       ],
-      temperature: 0.8, // Creatividad moderada
+      temperature: 0.7,
       response_format: { type: "json_object" }, // Forzar JSON (debe ser un objeto, no array)
     });
 
     const responseContent = completion.choices[0]?.message?.content;
     if (!responseContent) {
-      throw new Error("OpenAI no devolvió contenido");
+      throw new Error("Groq no devolvió contenido");
     }
 
-    // Parsear la respuesta de OpenAI
+    // Parsear la respuesta de Groq
     let parsedResponse: any;
     try {
       parsedResponse = JSON.parse(responseContent);
@@ -125,17 +114,17 @@ export async function POST(request: NextRequest) {
       if (jsonMatch) {
         parsedResponse = JSON.parse(jsonMatch[0]);
       } else {
-        throw new Error("No se pudo parsear la respuesta de OpenAI como JSON");
+        throw new Error("No se pudo parsear la respuesta de Groq como JSON");
       }
     }
 
-    // OpenAI con json_object devuelve un objeto, no un array directamente
+    // Groq con json_object devuelve un objeto, no un array directamente
     const questions = parsedResponse.questions || (Array.isArray(parsedResponse) ? parsedResponse : []);
     if (!Array.isArray(questions) || questions.length !== 7) {
       throw new Error(`Se esperaban 7 preguntas, se recibieron ${questions.length}`);
     }
 
-    console.log(`✅ OpenAI generó ${questions.length} preguntas`);
+    console.log(`✅ Groq generó ${questions.length} preguntas`);
 
     // 2. Insertar preguntas en r4w_ia_questions
     console.log("💾 Insertando preguntas en Supabase...");
@@ -260,9 +249,9 @@ export async function POST(request: NextRequest) {
 // GET para verificar que el endpoint funciona
 export async function GET() {
   return NextResponse.json({
-    message: "Endpoint de generación de preguntas con IA",
+    message: "Endpoint de generación de preguntas con Groq",
     method: "POST",
-    description: "Envía un POST a este endpoint para generar 7 preguntas y sus schedules",
+    description: "Envía un POST a este endpoint para generar 7 preguntas con Groq y crear sus schedules",
   });
 }
 

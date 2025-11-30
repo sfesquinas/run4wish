@@ -26,7 +26,7 @@ export async function POST(request: NextRequest) {
     const auth = await verifyAdminAuth(request);
     if (!auth.ok) {
       return NextResponse.json(
-        { error: auth.error || "No autenticado" },
+        { error: ("error" in auth ? auth.error : undefined) || "No autenticado" },
         { status: 401 }
       );
     }

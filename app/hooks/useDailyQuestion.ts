@@ -84,7 +84,7 @@ export function useDailyQuestion(raceType: string = "7d_mvp"): DailyQuestionStat
           .maybeSingle();
 
         // Si no hay schedule o hay un error de "no encontrado", intentar crear uno
-        if (!startDateData || (startDateError && startDateError.code === "PGRST116")) {
+        if (!startDateData || (startDateError && (startDateError as any).code === "PGRST116")) {
           console.log("⚠️ No se encontró schedule para el usuario, intentando crear uno...");
           if (raceType === "7d_mvp") {
             try {

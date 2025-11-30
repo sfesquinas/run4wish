@@ -172,7 +172,7 @@ export default function RegistroPage() {
       }
       
       // Si hay un error pero es relacionado con verificación de email
-      if (error && (error.message.includes("email") || error.message.includes("verification"))) {
+      if (error && (error as any).message && ((error as any).message.includes("email") || (error as any).message.includes("verification"))) {
         setRegisteredEmail(email);
         setShowEmailVerificationModal(true);
         setLoading(false);

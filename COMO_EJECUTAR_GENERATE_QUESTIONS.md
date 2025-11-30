@@ -1,6 +1,6 @@
 # Cómo ejecutar /api/admin/generate-questions
 
-Esta API genera las 7 preguntas necesarias para la carrera de 7 días usando OpenAI.
+Esta API carga las 7 preguntas predefinidas desde el archivo `questions_7d_mvp.json` y las guarda en Supabase.
 
 ## Opción 1: Desde el navegador (recomendado)
 
@@ -46,19 +46,22 @@ curl -X POST http://localhost:3000/api/admin/generate-questions \
 ## Requisitos
 
 - ✅ Debes estar **autenticado** en la aplicación
-- ✅ Debe existir la variable de entorno `OPENAI_API_KEY`
+- ✅ Debe existir el archivo `questions_7d_mvp.json` en la raíz del proyecto
 - ✅ La aplicación debe estar corriendo (`npm run dev`)
 
 ## Qué hace esta API
 
-1. Llama a OpenAI para generar 7 preguntas (una por cada día)
+1. Lee las 7 preguntas predefinidas desde el archivo `questions_7d_mvp.json`
 2. Guarda las preguntas en la tabla `r4w_ia_questions`
-3. Cada pregunta tiene:
+3. Crea los schedules para los próximos 7 días
+4. Cada pregunta tiene:
    - `day_number`: 1-7
    - `race_type`: "7d_mvp"
    - `question`: texto de la pregunta
    - `options`: array de opciones
    - `correct_option`: opción correcta
+   - `category`: categoría de la pregunta
+   - `difficulty`: nivel de dificultad
 
 ## Verificar que funcionó
 

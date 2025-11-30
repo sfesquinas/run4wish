@@ -28,21 +28,21 @@ export async function verifyAdminAuth(request: Request) {
   let userFromCookies = null;
   let userFromBearer = null;
 
-  // ============================================
-  // MÉTODO 1: Intentar con cookies (sesión normal)
-  // ============================================
-  try {
-    const cookieStore = cookies();
-    
-    // Crear cliente de Supabase con storage personalizado para leer cookies
-    const supabaseFromCookies = createClient(supabaseUrl, supabaseAnonKey, {
-      auth: {
-        persistSession: false,
-        autoRefreshToken: false,
-        detectSessionInUrl: false,
-        storage: {
-          getItem: (key: string) => {
-            const allCookies = cookieStore.getAll();
+      // ============================================
+      // MÉTODO 1: Intentar con cookies (sesión normal)
+      // ============================================
+      try {
+        const cookieStore = await cookies();
+        
+        // Crear cliente de Supabase con storage personalizado para leer cookies
+        const supabaseFromCookies = createClient(supabaseUrl, supabaseAnonKey, {
+          auth: {
+            persistSession: false,
+            autoRefreshToken: false,
+            detectSessionInUrl: false,
+            storage: {
+              getItem: (key: string) => {
+                const allCookies = cookieStore.getAll();
             for (const cookie of allCookies) {
               if (cookie.name === key || cookie.name.includes(key)) {
                 return cookie.value;
