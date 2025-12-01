@@ -47,6 +47,21 @@ export default function RankingPage() {
   // Encontrar la posición del usuario en el ranking completo
   const userRankingIndex = rankingData.findIndex(item => item.isYou);
   
+  // Calcular qué elementos mostrar: 3 anteriores, el usuario, y 3 posteriores
+  const getVisibleRanking = () => {
+    if (userRankingIndex < 0) {
+      // Si no se encuentra el usuario, mostrar los primeros
+      return rankingData.slice(0, 7);
+    }
+    
+    const startIndex = Math.max(0, userRankingIndex - 3);
+    const endIndex = Math.min(rankingData.length, userRankingIndex + 4); // +4 porque incluye el usuario
+    
+    return rankingData.slice(startIndex, endIndex);
+  };
+  
+  const visibleRanking = getVisibleRanking();
+  
   // Scroll automático a la posición del usuario cuando se carga
   useEffect(() => {
     if (userRankingIndex >= 0 && typeof document !== "undefined") {
@@ -137,18 +152,18 @@ export default function RankingPage() {
           )}
         </div>
 
-        {/* Lista completa del ranking */}
+        {/* Lista del ranking (solo 3 anteriores y 3 posteriores al usuario) */}
         {rankingData.length > 0 && (
           <div className="r4w-ranking-list-container">
-            <div className="r4w-ranking-list-title">📊 Clasificación completa</div>
+            <div className="r4w-ranking-list-title">📊 Clasificación</div>
             <div className="r4w-ranking-list-header">
               <span>Pos</span>
               <span>Runner</span>
               <span>Progreso</span>
               <span>Cambio</span>
             </div>
-            <div className="r4w-ranking-list">
-              {rankingData.map((item) => (
+            <div className="r4w-ranking-list" style={{ maxHeight: "400px", overflowY: "auto" }}>
+              {visibleRanking.map((item) => (
                 <div
                   key={item.position}
                   data-position={item.position}
@@ -195,12 +210,18 @@ export default function RankingPage() {
           </div>
         )}
 
-        <div className="r4w-ranking-footer">
-          <Link href="/carrera/r7" className="r4w-secondary-btn">
-            Ir a la carrera <span>🏁</span>
+        <div className="r4w-ranking-footer" style={{ display: "flex", gap: 8, width: "100%" }}>
+          <Link href="/carreras" className="r4w-secondary-btn" style={{ flex: 1 }}>
+            Ver Carreras
+            <span>🏁</span>
           </Link>
-          <Link href="/panel" className="r4w-secondary-btn">
-            Ver mi panel <span>📊</span>
+          <Link href="/perfil" className="r4w-secondary-btn" style={{ flex: 1 }}>
+            Ver mi perfil
+            <span>👤</span>
+          </Link>
+          <Link href="/panel" className="r4w-secondary-btn" style={{ flex: 1 }}>
+            Ver mi panel
+            <span>📊</span>
           </Link>
         </div>
       </section>

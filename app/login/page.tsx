@@ -11,7 +11,6 @@ export default function LoginPage() {
   const { setWishes } = useWishes(null); // en login aún no tenemos userId
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
 
@@ -74,17 +73,7 @@ export default function LoginPage() {
           setWishes(() => wishesFromProfile);
       }
 
-      // 3) Asegurar que el usuario tiene un schedule (en background, no bloquea)
-      // Si no tiene schedule, se creará automáticamente cuando acceda a /pregunta
-      // Pero lo intentamos aquí para que esté listo
-      import("../lib/checkUserSchedule").then(({ ensureUserSchedule }) => {
-        ensureUserSchedule(user.id).catch((err) => {
-          console.warn("⚠️ Error verificando/creando schedule en login (no crítico):", err);
-          // No bloqueamos el login, el schedule se creará automáticamente cuando acceda a /pregunta
-        });
-      });
-
-      // 4) Redirigir al panel
+      // 3) Redirigir al panel
       router.push("/panel");
     } catch (err: any) {
       console.error(err);
@@ -97,7 +86,9 @@ export default function LoginPage() {
   return (
     <main className="r4w-auth-page">
       <section className="r4w-auth-card">
-        <h1 className="r4w-auth-title">Inicia sesión en Run4Wish</h1>
+        <h1 className="r4w-auth-title">
+          Inicia sesión en Run<span style={{ color: "#FF7A1A" }}>4</span>Wish
+        </h1>
         <p className="r4w-auth-subtitle">
           Entra con tu email y contraseña para seguir corriendo por tu deseo.
         </p>
@@ -116,22 +107,12 @@ export default function LoginPage() {
 
           <label className="r4w-auth-label">
             Contraseña
-            <div className="r4w-auth-password-wrapper">
-              <input
-                className="r4w-auth-input"
-                type={showPassword ? "text" : "password"}
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-              />
-              <button
-                type="button"
-                className="r4w-auth-password-toggle"
-                onClick={() => setShowPassword(!showPassword)}
-                aria-label={showPassword ? "Ocultar contraseña" : "Mostrar contraseña"}
-              >
-                {showPassword ? "👁️" : "👁️‍🗨️"}
-              </button>
-            </div>
+            <input
+              className="r4w-auth-input"
+              type="password"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+            />
           </label>
 
           {errorMsg && <p className="r4w-auth-error">{errorMsg}</p>}

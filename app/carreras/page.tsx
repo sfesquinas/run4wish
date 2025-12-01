@@ -201,6 +201,52 @@ export default function CarrerasPage() {
               </Link>
             </div>
           </div>
+
+          {/* Carrera 24h Demo */}
+          <div className="r4w-race-card" style={{ marginTop: 16 }}>
+            <div className="r4w-race-name-row">
+              <span className="r4w-race-name">Carrera 24h · Demo</span>
+              <button
+                type="button"
+                className="r4w-info-icon"
+                onClick={() =>
+                  setInfo({
+                    title: "Carrera 24h · Demo",
+                    text: "12 preguntas entre las 09:00 y las 21:00. Ideal para probar la experiencia sprint.",
+                  })
+                }
+                aria-label="Ver información"
+              >
+                <span className="r4w-info-icon-dot">ℹ</span>
+              </button>
+            </div>
+
+            <div className="r4w-race-reward-row">
+              <button
+                type="button"
+                className="r4w-race-reward-icon-btn"
+                onClick={() =>
+                  setPrize({
+                    raceName: "Carrera 24h · Demo",
+                    reward: "Experiencia sprint Run4Wish",
+                  })
+                }
+                aria-label="Ver premio"
+              >
+                <span className="r4w-race-reward-icon">🏆</span>
+              </button>
+            </div>
+
+            <div className="r4w-race-footer">
+              <Link
+                href="/pregunta-24h"
+                className="r4w-primary-btn"
+              >
+                Probar carrera 24h
+                <span>🚀</span>
+              </Link>
+            </div>
+          </div>
         </section>
 
         {/* COLUMNA DERECHA: PRÓXIMAS CARRERAS */}

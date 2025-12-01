@@ -5,7 +5,6 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useUser } from "../hooks/useUser";
-import { supabase } from "../lib/supabaseClient";
 
 const initialAvatars = [
   { id: "a1", emoji: "🏃‍♀️", unlocked: true },
@@ -27,7 +26,7 @@ type StoredProfile = {
 };
 
 export default function PerfilPage() {
-  const { user, isReady, refreshProfile } = useUser();
+  const { user, isReady } = useUser();
   const router = useRouter();
 
   const [username, setUsername] = useState("Runner_You");
@@ -37,46 +36,32 @@ export default function PerfilPage() {
   const [selectedAvatar, setSelectedAvatar] = useState<string>("a1");
   const [saving, setSaving] = useState(false);
   const [profileNotice, setProfileNotice] = useState<string | null>(null);
-  const [errorMsg, setErrorMsg] = useState<string | null>(null);
 
-  // Cargar datos del perfil desde Supabase
+  // Cargar datos del perfil guardado o, si no hay, datos del usuario
   useEffect(() => {
-    if (!isReady || !user?.id) return;
+    if (!isReady) return;
+    if (typeof window === "undefined") return;
 
-    const loadProfile = async () => {
-      try {
-        // Cargar desde r4w_profiles
-        const { data: profileData, error } = await supabase
-          .from("r4w_profiles")
-          .select("username, country, avatar_id")
-          .eq("id", user.id)
-          .single();
-
-        if (!error && profileData) {
-          if (profileData.username) setUsername(profileData.username);
-          if (profileData.country) setCountry(profileData.country);
-          if (profileData.avatar_id) setSelectedAvatar(profileData.avatar_id);
-        }
-
-        // También cargar desde localStorage para sonido y vibración (temporal)
-        if (typeof window !== "undefined") {
-          try {
-            const raw = window.localStorage.getItem("r4w_profile");
-            if (raw) {
-              const p = JSON.parse(raw) as Partial<StoredProfile>;
-              if (typeof p.soundOn === "boolean") setSoundOn(p.soundOn);
-              if (typeof p.vibrationOn === "boolean") setVibrationOn(p.vibrationOn);
-            }
-          } catch {
-            // silencioso
-          }
-        }
-      } catch (err) {
-        console.error("Error cargando perfil:", err);
+    try {
+      const raw = window.localStorage.getItem("r4w_profile");
+      if (raw) {
+        const p = JSON.parse(raw) as Partial<StoredProfile>;
+        if (p.username) setUsername(p.username);
+        if (p.country) setCountry(p.country);
+        if (typeof p.soundOn === "boolean") setSoundOn(p.soundOn);
+        if (typeof p.vibrationOn === "boolean") setVibrationOn(p.vibrationOn);
+        if (p.avatarId) setSelectedAvatar(p.avatarId);
+        return;
       }
-    };
 
-    loadProfile();
+      // Si no había perfil guardado, usamos algunos datos del user
+      if (user?.country) setCountry(user.country);
+      if ((user as any).avatarId) {
+        setSelectedAvatar((user as any).avatarId as string);
+      }
+    } catch {
+      // silencioso
+    }
   }, [isReady, user]);
 
   const handleShare = () => {
@@ -85,98 +70,30 @@ export default function PerfilPage() {
     );
   };
 
-  const handleSave = async () => {
-    if (!user?.id) {
-      setErrorMsg("No se pudo identificar tu usuario. Por favor, inicia sesión de nuevo.");
-      return;
-    }
-
-    if (!username || username.trim().length === 0) {
-      setErrorMsg("El nombre de usuario es obligatorio.");
-      return;
-    }
+  const handleSave = () => {
+    if (typeof window === "undefined") return;
 
     setSaving(true);
-    setErrorMsg(null);
-
     try {
-      // 1) Validar que el username sea único (excepto si es el mismo usuario)
-      const { data: existingUser, error: checkError } = await supabase
-        .from("r4w_profiles")
-        .select("id, username")
-        .eq("username", username.trim())
-        .neq("id", user.id)
-        .maybeSingle();
+      const profileToStore: StoredProfile = {
+        username,
+        country,
+        soundOn,
+        vibrationOn,
+        avatarId: selectedAvatar,
+      };
 
-      if (checkError && checkError.code !== "PGRST116") {
-        // PGRST116 significa "no rows found", que es lo que queremos
-        console.error("Error verificando username:", checkError);
-        setErrorMsg("Error al verificar el nombre de usuario. Inténtalo de nuevo.");
-        setSaving(false);
-        return;
-      }
+      window.localStorage.setItem(
+        "r4w_profile",
+        JSON.stringify(profileToStore)
+      );
 
-      if (existingUser) {
-        setErrorMsg("Este nombre de usuario ya está en uso. Por favor, elige otro.");
-        setSaving(false);
-        return;
-      }
-
-      // 2) Actualizar r4w_profiles
-      const { error: profileError } = await supabase
-        .from("r4w_profiles")
-        .update({
-          username: username.trim(),
-          country: country,
-          avatar_id: selectedAvatar,
-        })
-        .eq("id", user.id);
-
-      if (profileError) {
-        console.error("Error actualizando perfil:", profileError);
-        setErrorMsg("No se pudo actualizar el perfil. Inténtalo de nuevo.");
-        setSaving(false);
-        return;
-      }
-
-      // 3) Actualizar user_metadata con username_game
-      const { error: metadataError } = await supabase.auth.updateUser({
-        data: {
-          username_game: username.trim(),
-        },
-      });
-
-      if (metadataError) {
-        console.error("Error actualizando metadata:", metadataError);
-        // No bloqueamos si falla, pero lo registramos
-      }
-
-      // 4) Guardar sonido y vibración en localStorage (temporal)
-      if (typeof window !== "undefined") {
-        const profileToStore: StoredProfile = {
-          username: username.trim(),
-          country,
-          soundOn,
-          vibrationOn,
-          avatarId: selectedAvatar,
-        };
-        window.localStorage.setItem(
-          "r4w_profile",
-          JSON.stringify(profileToStore)
-        );
-      }
-
-      // 5) Refrescar perfil para actualizar TopNav
-      await refreshProfile();
-      
       setProfileNotice("Perfil actualizado ✔️");
       setTimeout(() => {
         setProfileNotice(null);
         router.push("/panel");
       }, 1500);
-    } catch (err: any) {
-      console.error("Error guardando perfil:", err);
-      setErrorMsg("Ha ocurrido un error inesperado. Inténtalo de nuevo.");
+    } finally {
       setSaving(false);
     }
   };
@@ -201,96 +118,85 @@ export default function PerfilPage() {
     );
   }
 
-  const unlockedCount = initialAvatars.filter((a) => a.unlocked).length;
-
   return (
     <main className="r4w-profile-page">
       <section className="r4w-profile-layout">
-        <div className="r4w-profile-main">
+        {/* COLUMNA IZQUIERDA: datos básicos + toggles + avatares */}
+        <div>
           <h1 className="r4w-profile-main-title">Tu perfil Run4Wish</h1>
           <p className="r4w-profile-subtitle">
-            Ajusta tu nombre de usuario, país, sonido y el avatar con el que compites en cada carrera.
+            Ajusta tu nombre de usuario, país, sonido y el avatar con el que
+            compites en cada carrera.
           </p>
 
           <div className="r4w-profile-form">
             {/* Nombre usuario (juego) */}
-            <div className="r4w-profile-field">
-              <label className="r4w-profile-label">
-                Nombre de usuario (juego) *
-              </label>
+            <div>
+              <div className="r4w-profile-label">
+                Nombre de usuario (juego)
+              </div>
               <input
                 className="r4w-profile-input"
                 type="text"
                 value={username}
                 onChange={(e) => setUsername(e.target.value)}
                 maxLength={20}
-                placeholder="Ej: Runner_SAO"
               />
             </div>
-            {errorMsg && <p className="r4w-auth-error" style={{ marginTop: 8 }}>{errorMsg}</p>}
 
             {/* País */}
-            <div className="r4w-profile-field">
-              <label className="r4w-profile-label">País</label>
-              <div className="r4w-profile-select-wrapper">
-                <select
-                  className="r4w-profile-select"
-                  value={country}
-                  onChange={(e) => setCountry(e.target.value)}
-                >
-                  <option value="España">España</option>
-                  <option value="Portugal">Portugal</option>
-                  <option value="Francia">Francia</option>
-                  <option value="Italia">Italia</option>
-                  <option value="Alemania">Alemania</option>
-                  <option value="Otro">Otro</option>
-                </select>
-                <span className="r4w-profile-select-arrow">▼</span>
-              </div>
+            <div>
+              <div className="r4w-profile-label">País</div>
+              <select
+                className="r4w-profile-select"
+                value={country}
+                onChange={(e) => setCountry(e.target.value)}
+              >
+                <option value="España">España</option>
+                <option value="Portugal">Portugal</option>
+                <option value="Francia">Francia</option>
+                <option value="Italia">Italia</option>
+                <option value="Alemania">Alemania</option>
+                <option value="Otro">Otro</option>
+              </select>
             </div>
 
             {/* Toggles */}
-            <div className="r4w-profile-field">
-              <div className="r4w-toggle-row">
-                <div className="r4w-toggle-label">
-                  <span className="r4w-toggle-title">Sonido</span>
-                  <span className="r4w-toggle-desc">
-                    Activar efectos cuando respondes o subes de posición.
-                  </span>
-                </div>
-                <button
-                  type="button"
-                  className={`r4w-switch ${soundOn ? "on" : ""}`}
-                  onClick={() => setSoundOn((v) => !v)}
-                  aria-label="Toggle sonido"
-                >
-                  <div className="r4w-switch-knob" />
-                </button>
+            <div className="r4w-toggle-row">
+              <div className="r4w-toggle-label">
+                <span>Sonido</span>
+                <span>
+                  Activar efectos cuando respondes o subes de posición.
+                </span>
               </div>
+              <button
+                type="button"
+                className={`r4w-switch ${soundOn ? "on" : ""}`}
+                onClick={() => setSoundOn((v) => !v)}
+              >
+                <div className="r4w-switch-knob" />
+              </button>
             </div>
 
-            <div className="r4w-profile-field">
-              <div className="r4w-toggle-row">
-                <div className="r4w-toggle-label">
-                  <span className="r4w-toggle-title">Vibración</span>
-                  <span className="r4w-toggle-desc">
-                    Notificaciones sutiles cuando se abre la pregunta.
-                  </span>
-                </div>
-                <button
-                  type="button"
-                  className={`r4w-switch ${vibrationOn ? "on" : ""}`}
-                  onClick={() => setVibrationOn((v) => !v)}
-                  aria-label="Toggle vibración"
-                >
-                  <div className="r4w-switch-knob" />
-                </button>
+            <div className="r4w-toggle-row">
+              <div className="r4w-toggle-label">
+                <span>Vibración</span>
+                <span>Notificaciones sutiles cuando se abre la pregunta.</span>
               </div>
+              <button
+                type="button"
+                className={`r4w-switch ${vibrationOn ? "on" : ""}`}
+                onClick={() => setVibrationOn((v) => !v)}
+              >
+                <div className="r4w-switch-knob" />
+              </button>
             </div>
 
             {/* Avatares */}
-            <div className="r4w-profile-field">
-              <label className="r4w-profile-label">Avatar para las carreras</label>
+            <div>
+              <div className="r4w-profile-label" style={{ marginBottom: 6 }}>
+                Avatar para las carreras
+              </div>
               <div className="r4w-avatars-grid">
                 {initialAvatars.map((avatar) => {
                   const isSelected = avatar.id === selectedAvatar;
@@ -311,22 +217,28 @@ export default function PerfilPage() {
                       onClick={() =>
                         avatar.unlocked && setSelectedAvatar(avatar.id)
                       }
-                      aria-label={`Seleccionar avatar ${avatar.emoji}`}
                     >
                       {avatar.emoji}
                     </button>
                   );
                 })}
               </div>
-              <p className="r4w-profile-avatars-info">
-                Tienes {unlockedCount} avatares desbloqueados. El resto se irán desbloqueando según tu constancia y logros en las carreras.
-              </p>
+              <div
+                style={{
+                  marginTop: 6,
+                  fontSize: 11,
+                  color: "var(--r4w-text-muted)",
+                }}
+              >
+                Tienes 3 avatares desbloqueados. El resto se irán
+                desbloqueando según tu constancia y logros en las carreras.
+              </div>
             </div>
 
             {/* Botón guardar */}
             <button
               type="button"
-              className="r4w-primary-btn r4w-profile-save-btn"
+              className="r4w-primary-btn"
               onClick={handleSave}
               disabled={saving}
             >
@@ -335,18 +247,19 @@ export default function PerfilPage() {
           </div>
         </div>
 
-        {/* COLUMNA DERECHA: compartir */}
-        <aside className="r4w-profile-side">
+        {/* COLUMNA DERECHA: compartir + navegación */}
+        <aside>
           <h2 className="r4w-profile-side-title">
             Comparte Run4Wish con tus amigos
           </h2>
           <p className="r4w-profile-side-text">
-            En las próximas versiones, cuando invites a alguien y se registre usando tu link, ganarás wishes extra para usarlos en tus carreras.
+            En las próximas versiones, cuando invites a alguien y se registre
+            usando tu link, ganarás wishes extra para usarlos en tus carreras.
           </p>
 
           <button
             type="button"
-            className="r4w-primary-btn r4w-profile-share-btn"
+            className="r4w-primary-btn"
             onClick={handleShare}
           >
             Compartir mi link (demo)
@@ -354,8 +267,20 @@ export default function PerfilPage() {
           </button>
 
           <p className="r4w-profile-share-info">
-            La idea: 1 amigo que entra, 1 wish para ti. Todo controlado desde aquí, sin complicaciones.
+            La idea: 1 amigo que entra, 1 wish para ti. Todo controlado desde
+            aquí, sin complicaciones.
           </p>
+
+          <div style={{ marginTop: 16, display: "flex", gap: 8 }}>
+            <Link href="/panel" className="r4w-secondary-btn">
+              Volver a mi panel
+              <span>📊</span>
+            </Link>
+            <Link href="/carrera/r7" className="r4w-secondary-btn">
+              Ir a la carrera
+              <span>🏁</span>
+            </Link>
+          </div>
         </aside>
       </section>
 

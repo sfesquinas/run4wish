@@ -1,5 +1,5 @@
 // app/lib/userSchedule.ts
-// Helpers para crear y gestionar schedules personalizados por usuario
+// Funciones para crear y gestionar schedules de usuario
 
 import { createClient } from "@supabase/supabase-js";
 
@@ -10,364 +10,92 @@ if (!supabaseUrl || !supabaseServiceKey) {
   throw new Error("Faltan variables de entorno de Supabase");
 }
 
-// Cliente server-side para operaciones de base de datos
-// Usamos SERVICE_ROLE_KEY si está disponible para tener permisos completos
-const supabase = createClient(supabaseUrl, supabaseServiceKey, {
-  auth: {
-    persistSession: false,
-    autoRefreshToken: false,
-  },
-});
-
-const RACE_TYPE = "7d_mvp";
+const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
 /**
- * Genera una hora aleatoria entre minHour y maxHour (redondeada a cuartos de hora)
- */
-function generateRandomTimeWindow(minHour: number = 9, maxHour: number = 20): { start: string; end: string } {
-  const startHour = Math.floor(Math.random() * (maxHour - minHour + 1)) + minHour;
-  const startMinute = Math.floor(Math.random() * 4) * 15; // 0, 15, 30, 45
-  
-  const start = `${String(startHour).padStart(2, "0")}:${String(startMinute).padStart(2, "0")}:00`;
-  
-  // window_end es 1 hora después
-  const endHour = startHour + 1;
-  const end = `${String(endHour).padStart(2, "0")}:${String(startMinute).padStart(2, "0")}:00`;
-  
-  return { start, end };
-}
-
-/**
- * Redondea la hora actual hacia abajo al minuto (sin segundos)
- */
-function roundDownToMinute(date: Date): string {
-  const hours = String(date.getHours()).padStart(2, "0");
-  const minutes = String(date.getMinutes()).padStart(2, "0");
-  return `${hours}:${minutes}:00`;
-}
-
-/**
- * Calcula window_end para el día 1: hora actual + 2 horas, máximo 21:00
- */
-function calculateDay1WindowEnd(currentTime: string): string {
-  const [hours, minutes] = currentTime.split(":").map(Number);
-  let endHour = hours + 2;
-  
-  // Limitar a 21:00 máximo
-  if (endHour > 21) {
-    endHour = 21;
-  }
-  
-  return `${String(endHour).padStart(2, "0")}:${String(minutes).padStart(2, "0")}:00`;
-}
-
-/**
- * Crea un schedule personalizado de 7 días para un usuario en la carrera 7d_mvp
- * Solo se aplica si el usuario no tiene ya un schedule creado
+ * Crea un schedule completo de 7 días para un usuario en la carrera 7d_mvp
+ * Cada día tiene slot_number = 1 (una pregunta por día)
+ * @param userId ID del usuario
  */
 export async function createUserScheduleFor7dMvp(userId: string): Promise<void> {
   try {
-    console.log(`🔄 Iniciando creación de schedule para usuario ${userId}...`);
-    
-    // 1. Verificar si ya existe un schedule personalizado completo para este usuario
-    const { data: existingSchedules, error: checkError } = await supabase
-      .from("r4w_ia_daily_schedule")
-      .select("id, day_number")
-      .eq("race_type", RACE_TYPE)
-      .eq("user_id", userId);
+    console.log(`📅 Creando schedule de 7 días para usuario ${userId}...`);
 
-    if (checkError) {
-      console.error("❌ Error verificando schedule existente:");
-      console.error("Mensaje:", checkError.message);
-      console.error("Detalles:", checkError.details);
-      console.error("Hint:", checkError.hint);
-      console.error("Código:", checkError.code);
-      
-      // Verificar si falta la columna user_id
-      if (checkError.message?.includes("column") && checkError.message?.includes("user_id")) {
-        const errorMsg = "La columna 'user_id' no existe. Ejecuta: supabase_migration_user_schedules.sql";
-        console.error("⚠️", errorMsg);
-        throw new Error(errorMsg);
-      }
-      
-      // Verificar si la tabla no existe
-      if (checkError.message?.includes("relation") || checkError.message?.includes("does not exist")) {
-        const errorMsg = "La tabla r4w_ia_daily_schedule no existe.";
-        console.error("⚠️", errorMsg);
-        throw new Error(errorMsg);
-      }
-      
-      throw new Error(`Error verificando schedule: ${checkError.message || checkError.code || "Error desconocido"}`);
-    }
-
-    // Verificar si el schedule existe y está completo (tiene los 7 días)
-    if (existingSchedules && existingSchedules.length > 0) {
-      const days = existingSchedules.map(s => s.day_number).sort((a, b) => a - b);
-      const expectedDays = [1, 2, 3, 4, 5, 6, 7];
-      const hasAllDays = expectedDays.every(day => days.includes(day));
-      
-      if (hasAllDays && existingSchedules.length === 7) {
-        console.log(`✅ El usuario ${userId} ya tiene un schedule personalizado completo para ${RACE_TYPE}`);
-        return;
-      } else {
-        // Schedule incompleto, eliminarlo y recrearlo
-        console.log(`⚠️ El usuario ${userId} tiene un schedule incompleto (${existingSchedules.length}/7 días), eliminando y recreando...`);
-        const { error: deleteError } = await supabase
-          .from("r4w_ia_daily_schedule")
-          .delete()
-          .eq("race_type", RACE_TYPE)
-          .eq("user_id", userId);
-        
-        if (deleteError) {
-          console.error("❌ Error eliminando schedule incompleto:", deleteError);
-          throw new Error(`Error eliminando schedule incompleto: ${deleteError.message}`);
-        }
-        console.log(`✅ Schedule incompleto eliminado, procediendo a crear uno nuevo...`);
-      }
-    }
-
-    // 2. Obtener las 7 preguntas de la carrera (una por cada día)
-    const { data: questions, error: questionsError } = await supabase
+    // 1) Obtener o generar preguntas para los 7 días
+    // Primero intentamos obtener preguntas existentes sin asignar
+    const { data: existingQuestions, error: questionsError } = await supabase
       .from("r4w_ia_questions")
-      .select("id, day_number")
-      .eq("race_type", RACE_TYPE)
-      .in("day_number", [1, 2, 3, 4, 5, 6, 7])
-      .order("day_number", { ascending: true })
-      .order("created_at", { ascending: true }); // Si hay múltiples, tomar la primera
+      .select("id")
+      .limit(7);
 
     if (questionsError) {
-      console.error("❌ Error obteniendo preguntas:");
-      console.error("Mensaje:", questionsError.message);
-      console.error("Detalles:", questionsError.details);
-      console.error("Hint:", questionsError.hint);
-      console.error("Código:", questionsError.code);
-      
-      // Verificar si la tabla no existe
-      if (questionsError.message?.includes("relation") || questionsError.message?.includes("does not exist")) {
-        const errorMsg = "La tabla r4w_ia_questions no existe. Genera preguntas primero con /api/admin/generate-questions";
-        console.error("⚠️", errorMsg);
-        throw new Error(errorMsg);
-      }
-      
-      throw new Error(`Error obteniendo preguntas: ${questionsError.message || questionsError.code || "Error desconocido"}`);
+      console.error("Error obteniendo preguntas:", questionsError);
+      throw new Error(`Error obteniendo preguntas: ${questionsError.message}`);
     }
 
-    if (!questions || questions.length < 7) {
-      console.error("❌ No hay suficientes preguntas:", questions?.length || 0, "de 7 necesarias");
-      const errorMsg = `No se encontraron las 7 preguntas necesarias. Solo hay ${questions?.length || 0} preguntas en la base de datos. Genera preguntas con /api/admin/generate-questions`;
-      console.error("⚠️", errorMsg);
-      throw new Error(errorMsg);
+    if (!existingQuestions || existingQuestions.length < 7) {
+      console.warn(`⚠️ Solo hay ${existingQuestions?.length || 0} preguntas disponibles. Se necesitan 7.`);
+      // En producción, aquí podrías llamar al endpoint de generar preguntas
+      // Por ahora, lanzamos un error
+      throw new Error("No hay suficientes preguntas disponibles. Ejecuta /api/admin/generate-questions primero.");
     }
 
-    // Agrupar por day_number y tomar la primera de cada día
-    // IMPORTANTE: question_id es UUID (string) según el esquema de la tabla
-    const questionsByDay = new Map<number, string>();
-    for (const q of questions) {
-      if (!questionsByDay.has(q.day_number)) {
-        // question_id es UUID (string), usarlo directamente
-        if (!q.id || typeof q.id !== 'string') {
-          throw new Error(`question_id debe ser UUID (string), pero se recibió: ${q.id} (tipo: ${typeof q.id})`);
-        }
-        
-        // Validar formato UUID básico (opcional, pero recomendado)
-        const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
-        if (!uuidRegex.test(q.id)) {
-          console.warn(`⚠️ question_id no tiene formato UUID estándar: ${q.id}, pero se usará de todas formas`);
-        }
-        
-        questionsByDay.set(q.day_number, q.id);
-      }
-    }
+    // 2) Calcular la fecha de inicio (hoy es el día 1)
+    const today = new Date();
+    const todayStr = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, "0")}-${String(today.getDate()).padStart(2, "0")}`;
 
-    if (questionsByDay.size < 7) {
-      throw new Error(`Faltan preguntas: solo se encontraron ${questionsByDay.size} de 7 días`);
-    }
-
-    // 3. Calcular fecha de inicio (hoy) - esta será la fecha base para calcular días
-    const startDate = new Date();
-    const startDateStr = startDate.toISOString().split("T")[0]; // YYYY-MM-DD
-
-    // 4. Ventana horaria: todas las preguntas están disponibles de 00:00:00 a 23:59:59
-    const windowStart = "00:00:00";
-    const windowEnd = "23:59:59";
-
-    // 5. Crear los 7 schedules
-    // IMPORTANTE: Todos los schedules tendrán run_date = startDateStr (fecha de registro)
-    // El día se determina por day_number, no por run_date
-    // Esto permite que cada usuario tenga su propio calendario desde su día de registro
-    // Todas las preguntas están disponibles durante todo el día (00:00 - 23:59)
+    // 3) Crear los 7 schedules (uno para cada día)
     const schedules = [];
+    for (let day = 1; day <= 7; day++) {
+      const runDate = new Date(today);
+      runDate.setDate(today.getDate() + (day - 1));
+      const runDateStr = `${runDate.getFullYear()}-${String(runDate.getMonth() + 1).padStart(2, "0")}-${String(runDate.getDate()).padStart(2, "0")}`;
 
-    for (let dayNumber = 1; dayNumber <= 7; dayNumber++) {
-      const questionId = questionsByDay.get(dayNumber);
-      if (!questionId || typeof questionId !== 'string') {
-        throw new Error(`No se encontró pregunta válida (UUID) para el día ${dayNumber}`);
-      }
+      // Usar una pregunta diferente para cada día (rotación)
+      const questionIndex = (day - 1) % existingQuestions.length;
+      const questionId = existingQuestions[questionIndex].id;
 
-      // Todos los schedules tienen la misma run_date (fecha de inicio)
-      // El día se determina por day_number y se calcula dinámicamente según días transcurridos
-      // Ventana completa del día: 00:00:00 - 23:59:59
       schedules.push({
-        race_type: RACE_TYPE,
-        day_number: dayNumber,
-        question_id: questionId, // UUID (string)
-        run_date: startDateStr, // Fecha de registro (igual para todos los días)
-        window_start: windowStart, // 00:00:00
-        window_end: windowEnd, // 23:59:59
+        race_type: "7d_mvp",
         user_id: userId,
+        day_number: day,
+        run_date: runDateStr,
+        window_start: "00:00:00",
+        window_end: "23:59:59",
+        question_id: questionId,
+        slot_number: 1, // Para 7d_mvp, siempre slot_number = 1
       });
     }
 
-    // 6. Insertar todos los schedules
-    const { data: insertedData, error: insertError } = await supabase
+    // 4) Eliminar schedules existentes del usuario para esta carrera (si los hay)
+    const { error: deleteError } = await supabase
       .from("r4w_ia_daily_schedule")
-      .insert(schedules)
-      .select();
+      .delete()
+      .eq("race_type", "7d_mvp")
+      .eq("user_id", userId);
+
+    if (deleteError && deleteError.code !== "PGRST116") {
+      console.warn("⚠️ Error eliminando schedules antiguos (continuando):", deleteError.message);
+    }
+
+    // 5) Insertar los nuevos schedules
+    const { error: insertError } = await supabase
+      .from("r4w_ia_daily_schedule")
+      .insert(schedules);
 
     if (insertError) {
-      console.error("❌ Error insertando schedules personalizados:");
-      console.error("Mensaje:", insertError.message);
-      console.error("Detalles:", insertError.details);
-      console.error("Hint:", insertError.hint);
-      console.error("Código:", insertError.code);
-      console.error("Error completo:", JSON.stringify(insertError, Object.getOwnPropertyNames(insertError)));
-      console.error("Schedules que se intentaron insertar:", JSON.stringify(schedules, null, 2));
-      
-      // Verificar si el error es por tipo de dato incorrecto en question_id
-      if (insertError.message?.includes("question_id") || insertError.message?.includes("invalid input") || insertError.message?.includes("syntax") || insertError.message?.includes("uuid")) {
-        const errorMsg = `Error de tipo de dato en question_id. Verifica que r4w_ia_daily_schedule.question_id sea UUID y coincida con r4w_ia_questions.id. Detalles: ${insertError.message}`;
-        console.error("⚠️", errorMsg);
-        throw new Error(errorMsg);
-      }
-      
-      // Verificar si el error es porque falta la columna user_id (migración no ejecutada)
-      if (insertError.message?.includes("column") && (insertError.message?.includes("user_id") || insertError.message?.includes("does not exist"))) {
-        const errorMsg = "La columna 'user_id' no existe en la tabla. Por favor, ejecuta la migración SQL: supabase_migration_user_schedules.sql";
-        console.error("⚠️", errorMsg);
-        throw new Error(errorMsg);
-      }
-      
-      // Verificar si la tabla no existe
-      if (insertError.message?.includes("relation") || insertError.message?.includes("does not exist")) {
-        const errorMsg = "La tabla r4w_ia_daily_schedule no existe o no tiene la estructura correcta.";
-        console.error("⚠️", errorMsg);
-        throw new Error(errorMsg);
-      }
-      
-      throw new Error(`Error insertando schedules: ${insertError.message || insertError.code || "Error desconocido"}`);
+      console.error("❌ Error insertando schedules:", {
+        message: insertError.message,
+        details: insertError.details,
+        hint: insertError.hint,
+        code: insertError.code,
+      });
+      throw new Error(`Error insertando schedules: ${insertError.message}`);
     }
 
-    console.log(`✅ Creado schedule personalizado de 7 días para usuario ${userId}`);
-    console.log(`✅ Schedules insertados: ${insertedData?.length || 0}`);
-    
-    // Verificar que se insertaron correctamente
-    if (!insertedData || insertedData.length !== 7) {
-      console.warn(`⚠️ Se esperaban 7 schedules, se insertaron ${insertedData?.length || 0}`);
-    }
+    console.log(`✅ Schedule de 7 días creado correctamente para usuario ${userId}`);
   } catch (error: any) {
-    console.error("Error en createUserScheduleFor7dMvp:", error);
+    console.error("❌ Error en createUserScheduleFor7dMvp:", error);
     throw error;
   }
 }
-
-/**
- * Actualiza o crea el schedule del día siguiente para un usuario
- * Genera una ventana horaria aleatoria de 1 hora (09:00-21:00)
- */
-export async function updateNextDaySchedule(
-  userId: string,
-  currentDay: number
-): Promise<{ windowStart: string; windowEnd: string } | null> {
-  try {
-    const nextDay = currentDay + 1;
-    
-    // Validar que no exceda los 7 días
-    if (nextDay > 7) {
-      console.log(`✅ El usuario ${userId} ya completó los 7 días de la carrera`);
-      return null;
-    }
-
-      // Ventana completa del día: 00:00:00 - 23:59:59
-      const windowStart = "00:00:00";
-      const windowEnd = "23:59:59";
-
-    // Calcular fecha de mañana
-    const tomorrow = new Date();
-    tomorrow.setDate(tomorrow.getDate() + 1);
-    const tomorrowDateStr = tomorrow.toISOString().split("T")[0]; // YYYY-MM-DD
-
-    // Verificar si ya existe un schedule para el día siguiente
-    const { data: existingSchedule, error: checkError } = await supabase
-      .from("r4w_ia_daily_schedule")
-      .select("id, question_id")
-      .eq("race_type", RACE_TYPE)
-      .eq("user_id", userId)
-      .eq("day_number", nextDay)
-      .maybeSingle();
-
-    if (checkError) {
-      console.error("❌ Error verificando schedule del día siguiente:", checkError);
-      return null;
-    }
-
-    if (existingSchedule) {
-      // Actualizar schedule existente
-      const { error: updateError } = await supabase
-        .from("r4w_ia_daily_schedule")
-        .update({
-          window_start: windowStart,
-          window_end: windowEnd,
-          run_date: tomorrowDateStr, // Actualizar también la fecha por si acaso
-        })
-        .eq("id", existingSchedule.id);
-
-      if (updateError) {
-        console.error("❌ Error actualizando schedule del día siguiente:", updateError);
-        return null;
-      }
-
-      console.log(`✅ Actualizado schedule del día ${nextDay} para usuario ${userId}`);
-      return { windowStart, windowEnd };
-    } else {
-      // Crear nuevo schedule si no existe
-      // Necesitamos obtener la pregunta para ese día
-      const { data: question, error: questionError } = await supabase
-        .from("r4w_ia_questions")
-        .select("id")
-        .eq("race_type", RACE_TYPE)
-        .eq("day_number", nextDay)
-        .order("created_at", { ascending: true })
-        .limit(1)
-        .maybeSingle();
-
-      if (questionError || !question) {
-        console.error("❌ Error obteniendo pregunta para el día siguiente:", questionError);
-        return null;
-      }
-
-      const { error: insertError } = await supabase
-        .from("r4w_ia_daily_schedule")
-        .insert({
-          race_type: RACE_TYPE,
-          day_number: nextDay,
-          question_id: question.id,
-          run_date: tomorrowDateStr,
-          window_start: "00:00:00", // Ventana completa del día
-          window_end: "23:59:59", // Ventana completa del día
-          user_id: userId,
-        });
-
-      if (insertError) {
-        console.error("❌ Error creando schedule del día siguiente:", insertError);
-        return null;
-      }
-
-      console.log(`✅ Creado schedule del día ${nextDay} para usuario ${userId}`);
-      return { windowStart, windowEnd };
-    }
-  } catch (error: any) {
-    console.error("Error en updateNextDaySchedule:", error);
-    return null;
-  }
-}
-

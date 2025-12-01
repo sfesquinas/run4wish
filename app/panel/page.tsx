@@ -4,7 +4,6 @@
 import { useState, useEffect } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useRouter as useRouterForNav } from "next/navigation";
 import confetti from "canvas-confetti";
 
 import { useStreak } from "../hooks/useStreak";
@@ -26,7 +25,6 @@ type LastAdvance = {
 
 export default function PanelPage() {
   const router = useRouter();
-  const navRouter = useRouterForNav();
   const { user, isReady } = useUser() as any;
 
   // 🔁 Datos del usuario
@@ -52,15 +50,6 @@ export default function PanelPage() {
   const [openMessage, setOpenMessage] = useState<MessageKey | null>(null);
   const [localPreregCount, setLocalPreregCount] = useState<number | null>(null);
   const [lastAdvance, setLastAdvance] = useState<LastAdvance>(null);
-
-  // 👤 Nombre para mostrar
-  const baseName =
-    (user as any)?.user_metadata?.username_game ??
-    (user as any)?.username ??
-    (user as any)?.displayName ??
-    "Runner";
-
-  const displayName = `${baseName} ✨`;
 
   // Guard: si no hay usuario cuando ya hemos cargado, lo mandamos a /login
   useEffect(() => {
@@ -143,71 +132,81 @@ export default function PanelPage() {
 
   const handleOpenMessage = (key: MessageKey) => setOpenMessage(key);
   const handleCloseMessage = () => setOpenMessage(null);
-  
-  const handleNextRacesClose = () => {
-    setOpenMessage(null);
-    router.push("/carreras");
-  };
 
   return (
     <>
       <main className="r4w-panel-page">
         <div className="r4w-panel-layout">
-          {/* COLUMNA IZQUIERDA: título + KPIs + Wish Meter + botones */}
+          {/* COLUMNA IZQUIERDA: resumen carrera + stats */}
           <section className="r4w-panel-main">
-            {/* Título principal */}
-            <h1 className="r4w-panel-title-main">
-              Cada día que apareces, te acercas más a tu deseo ✨✨
-            </h1>
+            {/* Mensaje de bienvenida */}
+            <div style={{ marginBottom: 16, textAlign: "center", position: "relative" }}>
+              <div style={{
+                background: "linear-gradient(135deg, rgba(255, 122, 26, 0.15), rgba(255, 141, 58, 0.1))",
+                borderRadius: "16px",
+                padding: "14px 16px",
+                border: "1px solid rgba(255, 122, 26, 0.3)",
+                boxShadow: "0 4px 20px rgba(255, 122, 26, 0.15)"
+              }}>
+                <h1 style={{ 
+                  fontSize: 18, 
+                  fontWeight: 700, 
+                  background: "linear-gradient(135deg, #FF7A1A, #FFC065)",
+                  WebkitBackgroundClip: "text",
+                  WebkitTextFillColor: "transparent",
+                  backgroundClip: "text",
+                  margin: 0, 
+                  lineHeight: 1.4 
+                }}>
+                  Cada día que apareces, te acercas más a tu deseo ✨
+                </h1>
+              </div>
+            </div>
 
-            {/* Grid de KPIs 3x2 */}
+            {/* Grid de estadísticas (3x2) */}
             <div className="r4w-panel-kpis">
-              {/* Fila 1 */}
-              <button
-                type="button"
-                className="r4w-panel-kpi-card r4w-panel-kpi-clickable"
-                onClick={() => router.push("/wishes")}
-              >
+              {/* WISHES DISPONIBLES */}
+              <Link href="/wishes" className="r4w-panel-kpi-card">
                 <div className="r4w-panel-kpi-icon">🔮</div>
                 <div className="r4w-panel-kpi-label">WISHES DISPONIBLES</div>
                 <div className="r4w-panel-kpi-value">{wishesLoading ? "…" : wishes}</div>
-              </button>
+              </Link>
 
-              <div className="r4w-panel-kpi-card">
+              {/* RACHA ACTUAL */}
+              <Link href="/ranking" className="r4w-panel-kpi-card">
                 <div className="r4w-panel-kpi-icon">🔥</div>
                 <div className="r4w-panel-kpi-label">RACHA ACTUAL</div>
                 <div className="r4w-panel-kpi-value">
                   {streakLoading ? "…" : `${streak} día${streak === 1 ? "" : "s"}`}
                 </div>
-              </div>
+              </Link>
 
-              <button
-                type="button"
-                className="r4w-panel-kpi-card r4w-panel-kpi-clickable"
-                onClick={() => router.push("/carreras")}
-              >
+              {/* CARRERAS ACTIVAS */}
+              <Link href="/carreras" className="r4w-panel-kpi-card">
                 <div className="r4w-panel-kpi-icon">🏁</div>
                 <div className="r4w-panel-kpi-label">CARRERAS ACTIVAS</div>
                 <div className="r4w-panel-kpi-value">{activeRaces.length}</div>
-              </button>
+              </Link>
 
-              {/* Fila 2 */}
-              <button
-                type="button"
-                className="r4w-panel-kpi-card r4w-panel-kpi-clickable"
-                onClick={() => router.push("/ranking")}
-              >
+              {/* PUESTOS DESDE AYER */}
+              <Link href="/ranking" className="r4w-panel-kpi-card">
                 <div className="r4w-panel-kpi-icon">📈</div>
                 <div className="r4w-panel-kpi-label">PUESTOS DESDE AYER</div>
-                <div className="r4w-panel-kpi-value">{lastAdvance?.positions || 0}</div>
-              </button>
+                <div className="r4w-panel-kpi-value">
+                  {lastAdvance ? `+${lastAdvance.positions}` : "0"}
+                </div>
+              </Link>
 
-              <div className="r4w-panel-kpi-card">
+              {/* MEJOR POSICIÓN */}
+              <Link href="/ranking" className="r4w-panel-kpi-card">
                 <div className="r4w-panel-kpi-icon">⭐</div>
                 <div className="r4w-panel-kpi-label">MEJOR POSICIÓN</div>
-                <div className="r4w-panel-kpi-value">—</div>
-              </div>
+                <div className="r4w-panel-kpi-value">
+                  {userPosition ? `#${userPosition}` : "—"}
+                </div>
+              </Link>
 
+              {/* VER CARRERAS */}
               <Link href="/carreras" className="r4w-panel-kpi-card r4w-panel-kpi-button">
                 <div className="r4w-panel-kpi-icon">🚀</div>
                 <div className="r4w-panel-kpi-label">VER CARRERAS</div>
@@ -217,12 +216,12 @@ export default function PanelPage() {
 
             {/* Wish Meter */}
             <div className="r4w-meter-section">
-              <h2 className="r4w-meter-title">Wish Meter</h2>
+              <h3 className="r4w-meter-title">Wish Meter</h3>
               <p className="r4w-meter-subtitle">Cuanta más actividad, más wishes.</p>
               <div className="r4w-meter-bar-container">
                 <div className="r4w-meter-bar">
-                  <div 
-                    className="r4w-meter-bar-fill" 
+                  <div
+                    className="r4w-meter-bar-fill"
                     style={{ width: `${Math.min((wishes / 10) * 100, 100)}%` }}
                   />
                 </div>
@@ -233,94 +232,51 @@ export default function PanelPage() {
               </div>
             </div>
 
-            {/* Botón grande de energía */}
-            {wishes >= 10 && (
-              <div className="r4w-panel-energy-card">
-                <div className="r4w-panel-energy-text">
-                  Tienes energía de sobra para tu próximo deseo ✨✨
-                </div>
-              </div>
-            )}
-
-            {/* Estado de pregunta y botón */}
-            <div className="r4w-panel-question-section">
-              {questionLoading ? (
-                <div className="r4w-panel-question-status">
-                  Cargando estado de la pregunta de hoy…
-                </div>
-              ) : questionError === "no_schedule" ? (
-                <div className="r4w-panel-question-status">
-                  ℹ️ Hoy no hay pregunta programada en esta carrera.
-                </div>
-              ) : questionError === "after_window" ? (
-                <div className="r4w-panel-question-status">
-                  ⏱ La ventana de hoy ya se cerró. Mañana tendrás una nueva pregunta.
-                </div>
-              ) : questionError === "before_window" ? (
-                <div className="r4w-panel-question-status r4w-panel-question-status-warning">
-                  ⏱ La ventana se abrirá entre {dailyQuestion?.windowStart.slice(0, 5) || "..."} y {dailyQuestion?.windowEnd.slice(0, 5) || "..."}
-                </div>
-              ) : dailyQuestion ? (
-                <div className="r4w-panel-question-status r4w-panel-question-status-success">
-                  🟢 Pregunta de hoy disponible hasta {dailyQuestion.windowEnd.slice(0, 5)}
-                </div>
-              ) : null}
-
-              {wishes >= 10 && (
-                <Link href="/pregunta" className="r4w-primary-btn r4w-panel-question-btn">
-                  Pregunta de hoy
-                </Link>
-              )}
+            {/* Botón de energía */}
+            <div className="r4w-panel-energy-card">
+              <p className="r4w-panel-energy-text">
+                Tienes energía de sobra para tu próximo deseo ✨✨
+              </p>
             </div>
           </section>
 
-          {/* COLUMNA DERECHA: mensajes */}
+          {/* COLUMNA DERECHA: mensajes + siguiente movimiento */}
           <section className="r4w-panel-side">
-            <h2 className="r4w-panel-side-title">Mensajes Run4Wish</h2>
-            <p className="r4w-panel-side-subtitle">
-              Recordatorios para que sigas en carrera.
-            </p>
-
-            {/* Chip de prerreservas */}
-            <div className="r4w-panel-prereg-chip">
-              PRERRESERVAS: <strong>{preregCount}</strong>
-            </div>
-
             <div className="r4w-message-buttons">
               <button
                 type="button"
-                className="r4w-message-btn"
+                className="r4w-message-btn-simple"
                 onClick={() => handleOpenMessage("today")}
+                title="Mensaje de hoy"
               >
-                <span>Mensaje de hoy</span>
-                <span className="r4w-message-btn-icon">➜</span>
+                ✨
               </button>
 
               <button
                 type="button"
-                className="r4w-message-btn"
+                className="r4w-message-btn-simple"
                 onClick={() => handleOpenMessage("nextMove")}
+                title="Tu siguiente movimiento"
               >
-                <span>Siguiente movimiento</span>
-                <span className="r4w-message-btn-icon">➜</span>
+                ➡️
               </button>
 
               <button
                 type="button"
-                className="r4w-message-btn"
+                className="r4w-message-btn-simple"
                 onClick={() => handleOpenMessage("nextRaces")}
+                title="Próximas carreras"
               >
-                <span>Próximas carreras</span>
-                <span className="r4w-message-btn-icon">➜</span>
+                🏁
               </button>
 
               <button
                 type="button"
-                className="r4w-message-btn"
+                className="r4w-message-btn-simple"
                 onClick={() => handleOpenMessage("fullRanking")}
+                title="Ver ranking completo"
               >
-                <span>Ranking completo</span>
-                <span className="r4w-message-btn-icon">➜</span>
+                📈
               </button>
             </div>
           </section>
@@ -405,7 +361,7 @@ export default function PanelPage() {
                 <button
                   type="button"
                   className="r4w-primary-btn r4w-info-close-btn"
-                  onClick={handleNextRacesClose}
+                  onClick={handleCloseMessage}
                 >
                   Quiero seguir en la carrera 🚀
                 </button>

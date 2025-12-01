@@ -147,7 +147,7 @@ export default function CarreraDetallePage() {
               <Link
                 href="/pregunta"
                 className={questionAvailable ? "r4w-primary-btn" : "r4w-secondary-btn"}
-                style={questionAvailable ? {} : { opacity: 0.6, cursor: "not-allowed" }}
+                style={questionAvailable ? {} : { opacity: 0.6, cursor: "not-allowed", width: "100%", marginBottom: 12 }}
                 onClick={(e) => {
                   if (!questionAvailable) {
                     e.preventDefault();
@@ -162,15 +162,22 @@ export default function CarreraDetallePage() {
                 {questionAvailable && <span>➜</span>}
               </Link>
 
-              <Link href="/perfil" className="r4w-secondary-btn">
-                Ver mi perfil
-                <span>👤</span>
-              </Link>
+              <div style={{ display: "flex", gap: 8, width: "100%" }}>
+                <Link href="/carreras" className="r4w-secondary-btn" style={{ flex: 1 }}>
+                  Ver Carreras
+                  <span>🏁</span>
+                </Link>
 
-              <Link href="/ranking" className="r4w-secondary-btn">
-                Ver ranking
-                <span>📈</span>
-              </Link>
+                <Link href="/ranking" className="r4w-secondary-btn" style={{ flex: 1 }}>
+                  Ver Ranking
+                  <span>📈</span>
+                </Link>
+
+                <Link href="/perfil" className="r4w-secondary-btn" style={{ flex: 1 }}>
+                  Ver mi perfil
+                  <span>👤</span>
+                </Link>
+              </div>
             </div>
           </div>
         </section>

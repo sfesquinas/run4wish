@@ -89,12 +89,18 @@ export default function WishesPage() {
             </div>
           </div>
 
-          <div className="r4w-wishes-nav">
-            <Link href="/panel" className="r4w-secondary-btn">
-              Ver mi panel <span>📊</span>
+          <div className="r4w-wishes-nav" style={{ display: "flex", gap: 8, width: "100%" }}>
+            <Link href="/carreras" className="r4w-secondary-btn" style={{ flex: 1 }}>
+              Carreras
+              <span>🏁</span>
             </Link>
-            <Link href="/carreras" className="r4w-secondary-btn">
-              Ir a carreras <span>🏁</span>
+            <Link href="/ranking" className="r4w-secondary-btn" style={{ flex: 1 }}>
+              Estadística
+              <span>📈</span>
+            </Link>
+            <Link href="/panel" className="r4w-secondary-btn" style={{ flex: 1 }}>
+              Mi panel
+              <span>📊</span>
             </Link>
           </div>
         </div>

@@ -4,8 +4,10 @@
 import { createClient } from "@supabase/supabase-js";
 import { cookies } from "next/headers";
 
+const ADMIN_EMAIL = "sara.fernandez@run4wish.com";
+
 /**
- * Verifica si el usuario está autenticado
+ * Verifica si el usuario está autenticado y es administrador
  * Intenta dos métodos: cookies (sesión normal) y Bearer token (header Authorization)
  * @param request Request para leer headers y cookies
  * @returns { ok: boolean, error?: "not_authenticated", email?: string }
@@ -15,7 +17,6 @@ export async function verifyAdminAuth(request: Request) {
 
   const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
   const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
-  const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
 
   if (!supabaseUrl || !supabaseAnonKey) {
     console.log("[IA ADMIN] faltan variables de entorno de Supabase");
@@ -28,21 +29,21 @@ export async function verifyAdminAuth(request: Request) {
   let userFromCookies = null;
   let userFromBearer = null;
 
-      // ============================================
-      // MÉTODO 1: Intentar con cookies (sesión normal)
-      // ============================================
-      try {
-        const cookieStore = await cookies();
-        
-        // Crear cliente de Supabase con storage personalizado para leer cookies
-        const supabaseFromCookies = createClient(supabaseUrl, supabaseAnonKey, {
-          auth: {
-            persistSession: false,
-            autoRefreshToken: false,
-            detectSessionInUrl: false,
-            storage: {
-              getItem: (key: string) => {
-                const allCookies = cookieStore.getAll();
+  // ============================================
+  // MÉTODO 1: Intentar con cookies (sesión normal)
+  // ============================================
+  try {
+    const cookieStore = await cookies();
+    
+    // Crear cliente de Supabase con storage personalizado para leer cookies
+    const supabaseFromCookies = createClient(supabaseUrl, supabaseAnonKey, {
+      auth: {
+        persistSession: false,
+        autoRefreshToken: false,
+        detectSessionInUrl: false,
+        storage: {
+          getItem: (key: string) => {
+            const allCookies = cookieStore.getAll();
             for (const cookie of allCookies) {
               if (cookie.name === key || cookie.name.includes(key)) {
                 return cookie.value;
@@ -56,80 +57,40 @@ export async function verifyAdminAuth(request: Request) {
       },
     });
 
-    // Intentar obtener sesión desde cookies
-    const { data: { session }, error: sessionError } = await supabaseFromCookies.auth.getSession();
-    
-    if (!sessionError && session?.user) {
-      userFromCookies = session.user;
-    } else {
-      // Si getSession no funciona, intentar leer manualmente las cookies
-      const projectRef = supabaseUrl.split("//")[1].split(".")[0];
-      const cookieName = `sb-${projectRef}-auth-token`;
-      const authCookie = cookieStore.get(cookieName)?.value;
-
-      if (authCookie) {
-        try {
-          const parsed = JSON.parse(authCookie);
-          const token = parsed.access_token || parsed;
-          if (token && typeof token === "string") {
-            const { data: { user }, error: userError } = await supabaseFromCookies.auth.getUser(token);
-            if (!userError && user) {
-              userFromCookies = user;
-            }
-          }
-        } catch {
-          // Si no es JSON, intentar como token directo
-          if (typeof authCookie === "string" && authCookie.length > 50) {
-            const { data: { user }, error: userError } = await supabaseFromCookies.auth.getUser(authCookie);
-            if (!userError && user) {
-              userFromCookies = user;
-            }
-          }
-        }
-      }
+    const { data: { user }, error: cookieError } = await supabaseFromCookies.auth.getUser();
+    if (!cookieError && user) {
+      userFromCookies = user;
     }
-  } catch (error) {
-    console.error("[IA ADMIN] error leyendo cookies:", error);
+  } catch (err) {
+    console.log("[IA ADMIN] error con cookies:", err);
   }
-
-  console.log("[IA ADMIN] vía cookies ->", userFromCookies?.email || "sin usuario");
 
   // ============================================
   // MÉTODO 2: Intentar con Bearer token (header Authorization)
   // ============================================
-  if (!userFromCookies) {
-    try {
-      const authHeader = request.headers.get("authorization");
-      
-      if (authHeader && authHeader.startsWith("Bearer ")) {
-        const jwtToken = authHeader.replace("Bearer ", "").trim();
-        
-        if (jwtToken && supabaseServiceKey) {
-          // Crear cliente de Supabase con SERVICE_ROLE_KEY para validar el token
-          const supabaseFromBearer = createClient(supabaseUrl, supabaseServiceKey, {
-            auth: {
-              persistSession: false,
-              autoRefreshToken: false,
-              detectSessionInUrl: false,
-            },
-          });
+  try {
+    const authHeader = request.headers.get("Authorization");
+    if (authHeader && authHeader.startsWith("Bearer ")) {
+      const token = authHeader.substring(7);
+      const supabaseFromBearer = createClient(supabaseUrl, supabaseAnonKey, {
+        auth: {
+          persistSession: false,
+          autoRefreshToken: false,
+          detectSessionInUrl: false,
+        },
+      });
 
-          const { data: { user }, error: userError } = await supabaseFromBearer.auth.getUser(jwtToken);
-          
-          if (!userError && user) {
-            userFromBearer = user;
-          }
-        }
+      const { data: { user }, error: bearerError } = await supabaseFromBearer.auth.getUser(token);
+      if (!bearerError && user) {
+        userFromBearer = user;
       }
-    } catch (error) {
-      console.error("[IA ADMIN] error leyendo bearer token:", error);
     }
+  } catch (err) {
+    console.log("[IA ADMIN] error con bearer:", err);
   }
 
-  console.log("[IA ADMIN] vía bearer ->", userFromBearer?.email || "sin usuario");
-
   // ============================================
-  // Determinar usuario final
+  // Decidir qué usuario usar
   // ============================================
   const user = userFromCookies || userFromBearer;
 
@@ -148,10 +109,17 @@ export async function verifyAdminAuth(request: Request) {
   }
 
   // ============================================
-  // Usuario autenticado (sin verificación de administrador)
+  // Verificar si es administrador
   // ============================================
+  const isAdmin = userEmail.toLowerCase() === ADMIN_EMAIL.toLowerCase();
+
+  if (!isAdmin) {
+    const result = { ok: false, error: "forbidden" as const };
+    console.log("[IA ADMIN] resultado final ->", result);
+    return result;
+  }
+
   const result = { ok: true, email: userEmail };
   console.log("[IA ADMIN] resultado final ->", result);
   return result;
 }
-
