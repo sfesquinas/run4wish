@@ -87,7 +87,7 @@ export default function LoginPage() {
     <main className="r4w-auth-page">
       <section className="r4w-auth-card">
         <h1 className="r4w-auth-title">
-          Inicia sesión en Run<span style={{ color: "#FF7A1A" }}>4</span>Wish
+          Inicia sesión en <span className="r4w-auth-title-run">RUN</span><span className="r4w-auth-title-4">4</span><span className="r4w-auth-title-wish">WISH</span>
         </h1>
         <p className="r4w-auth-subtitle">
           Entra con tu email y contraseña para seguir corriendo por tu deseo.
