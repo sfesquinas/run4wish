@@ -264,7 +264,7 @@ export default function Pregunta24hPage() {
     questionText: dailyQuestion?.question,
   });
 
-  // Estados de carga - SOLO cuando loading es true
+  // a) Mientras questionLoading === true o checkingAnswer === true
   if (questionLoading || checkingAnswer) {
     return (
       <main className="r4w-question-page">
@@ -279,16 +279,16 @@ export default function Pregunta24hPage() {
     );
   }
 
-  // Manejo explícito de estados de error cuando NO está cargando
+  // b) Cuando questionLoading === false
   if (!questionLoading) {
-    // Error: no hay schedule
-    if (windowState === null && questionError === "no_schedule") {
+    // Si hay error
+    if (questionError === "no_schedule") {
       return (
         <main className="r4w-question-page">
           <section className="r4w-question-layout">
             <div className="r4w-question-card-standalone">
               <div className="r4w-question-status">Sin pregunta disponible</div>
-              <h1 className="r4w-question-title">Sin pregunta disponible</h1>
+              <h1 className="r4w-question-title">Sin pregunta disponible hoy</h1>
               <p className="r4w-question-subtitle">
                 Hoy no hay pregunta programada para este tramo horario.
               </p>
@@ -302,8 +302,7 @@ export default function Pregunta24hPage() {
       );
     }
 
-    // Error: error de carga o error de pregunta
-    if ((windowState === null && questionError === "error_carga") || questionError === "error_carga") {
+    if (questionError === "error_carga") {
       return (
         <main className="r4w-question-page">
           <section className="r4w-question-layout">
@@ -322,75 +321,80 @@ export default function Pregunta24hPage() {
         </main>
       );
     }
-  }
 
-  if (questionError === "before_window" || windowState === "before") {
-    return (
-      <main className="r4w-question-page">
-        <section className="r4w-question-layout">
-          <div className="r4w-question-card-standalone">
-            <div className="r4w-question-status">Ventana aún no abierta</div>
-            <h1 className="r4w-question-title">La ventana aún no está abierta</h1>
-            <p className="r4w-question-subtitle">
-              {windowInfo
-                ? `La ventana se abrirá entre ${formatTimeToHHMM(windowInfo.start)} y ${formatTimeToHHMM(windowInfo.end)}.`
-                : "La ventana de este tramo aún no está disponible."}
-            </p>
-            <Link href="/panel" className="r4w-primary-btn" style={{ marginTop: 16 }}>
-              Volver a mi panel
-              <span>📊</span>
-            </Link>
-          </div>
-        </section>
-      </main>
-    );
-  }
+    if (questionError === "before_window" || windowState === "before") {
+      return (
+        <main className="r4w-question-page">
+          <section className="r4w-question-layout">
+            <div className="r4w-question-card-standalone">
+              <div className="r4w-question-status">Ventana aún no abierta</div>
+              <h1 className="r4w-question-title">La ventana aún no está abierta</h1>
+              <p className="r4w-question-subtitle">
+                {windowInfo
+                  ? `La ventana se abrirá entre ${formatTimeToHHMM(windowInfo.start)} y ${formatTimeToHHMM(windowInfo.end)}.`
+                  : "La ventana de este tramo aún no está disponible."}
+              </p>
+              <Link href="/panel" className="r4w-primary-btn" style={{ marginTop: 16 }}>
+                Volver a mi panel
+                <span>📊</span>
+              </Link>
+            </div>
+          </section>
+        </main>
+      );
+    }
 
-  if (questionError === "after_window" || windowState === "after") {
-    return (
-      <main className="r4w-question-page">
-        <section className="r4w-question-layout">
-          <div className="r4w-question-card-standalone">
-            <div className="r4w-question-status">Ventana cerrada</div>
-            <h1 className="r4w-question-title">La ventana de hoy ya ha cerrado</h1>
-            <p className="r4w-question-subtitle">
-              La ventana de hoy para esta carrera 24h ya ha finalizado. Mañana tendrás una nueva oportunidad en esta carrera 24h.
-            </p>
-            <Link href="/panel" className="r4w-primary-btn" style={{ marginTop: 16 }}>
-              Volver a mi panel
-              <span>📊</span>
-            </Link>
-          </div>
-        </section>
-      </main>
-    );
-  }
+    if (questionError === "after_window" || windowState === "after") {
+      return (
+        <main className="r4w-question-page">
+          <section className="r4w-question-layout">
+            <div className="r4w-question-card-standalone">
+              <div className="r4w-question-status">Ventana cerrada</div>
+              <h1 className="r4w-question-title">La ventana de hoy ya ha cerrado</h1>
+              <p className="r4w-question-subtitle">
+                La ventana de hoy para esta carrera 24h ya ha finalizado. Mañana tendrás una nueva oportunidad en esta carrera 24h.
+              </p>
+              <Link href="/panel" className="r4w-primary-btn" style={{ marginTop: 16 }}>
+                Volver a mi panel
+                <span>📊</span>
+              </Link>
+            </div>
+          </section>
+        </main>
+      );
+    }
 
-  // Guardia: verificar que tenemos pregunta válida antes de renderizar
-  if (!questionLoading && (!dailyQuestion || !dailyQuestion.question || windowState !== "active")) {
-    console.warn("⚠️ pregunta-24h: estado incoherente, mostrando mensaje genérico", {
-      windowState,
-      error: questionError,
-      dailyQuestion,
-      hasQuestionText: !!dailyQuestion?.question,
-    });
-    return (
-      <main className="r4w-question-page">
-        <section className="r4w-question-layout">
-          <div className="r4w-question-card-standalone">
-            <div className="r4w-question-status">Sin pregunta disponible</div>
-            <h1 className="r4w-question-title">No hay pregunta disponible</h1>
-            <p className="r4w-question-subtitle">
-              No hemos podido mostrar tu pregunta en este momento.
-            </p>
-            <Link href="/panel" className="r4w-primary-btn" style={{ marginTop: 16 }}>
-              Volver a mi panel
-              <span>📊</span>
-            </Link>
-          </div>
-        </section>
-      </main>
-    );
+    // Si NO hay error: verificar que tenemos pregunta válida
+    if (dailyQuestion && dailyQuestion.question && windowState === "active") {
+      // Continuar con el renderizado de la pregunta (código más abajo)
+    } else {
+      // Estado incoherente
+      console.warn("⚠️ Estado incoherente en pregunta-24h", {
+        questionLoading,
+        questionError,
+        windowState,
+        dailyQuestion,
+        hasQuestion: !!dailyQuestion,
+        hasQuestionText: !!dailyQuestion?.question,
+      });
+      return (
+        <main className="r4w-question-page">
+          <section className="r4w-question-layout">
+            <div className="r4w-question-card-standalone">
+              <div className="r4w-question-status">Sin pregunta disponible</div>
+              <h1 className="r4w-question-title">No hay pregunta disponible en este momento</h1>
+              <p className="r4w-question-subtitle">
+                No hemos podido mostrar tu pregunta en este momento.
+              </p>
+              <Link href="/panel" className="r4w-primary-btn" style={{ marginTop: 16 }}>
+                Volver a mi panel
+                <span>📊</span>
+              </Link>
+            </div>
+          </section>
+        </main>
+      );
+    }
   }
 
   return (

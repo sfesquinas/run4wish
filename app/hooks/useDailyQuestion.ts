@@ -95,223 +95,245 @@ export function useDailyQuestion(raceType: "7d_mvp" | "24h_sprint" = "7d_mvp"): 
 
       // Lógica específica para 24h_sprint
       if (raceType === "24h_sprint") {
-        // Verificar que hay userId
-        if (!userId) {
-          console.warn("⚠️ 24h_sprint: no hay userId");
-          setError("no_schedule");
-          setWindowState(null);
-          setLoading(false);
-          executedRef.current = false;
-          return;
-        }
+        try {
+          // Verificar que hay userId
+          if (!userId) {
+            console.warn("⚠️ 24h_sprint: no hay userId");
+            setQuestion(null);
+            setError("no_schedule");
+            setWindowState(null);
+            setLoading(false);
+            executedRef.current = false;
+            return;
+          }
 
-        // 1) Comprobar hora actual
-        const currentHour = parseInt(currentTime.split(":")[0], 10);
+          // 1) Comprobar hora actual
+          const currentHour = parseInt(currentTime.split(":")[0], 10);
 
-        // 2) Si antes de 09:00 → before_window
-        if (currentHour < 9) {
-          setError("before_window");
-          setWindowState("before");
-          setWindowInfo({
-            start: "09:00:00",
-            end: "21:00:00",
-            currentTime: currentTime,
-          });
-          setLoading(false);
-          executedRef.current = false;
-          return;
-        }
+          // 2) Si antes de 09:00 → before_window
+          if (currentHour < 9) {
+            setError("before_window");
+            setWindowState("before");
+            setWindowInfo({
+              start: "09:00:00",
+              end: "21:00:00",
+              currentTime: currentTime,
+            });
+            setLoading(false);
+            executedRef.current = false;
+            return;
+          }
 
-        // 3) Calcular slot actual (09-10 → 1, 10-11 → 2, ..., 20-21 → 12)
-        const currentSlot = getSlotNumberFromHour(currentHour);
+          // 3) Calcular slot actual (09-10 → 1, 10-11 → 2, ..., 20-21 → 12)
+          const currentSlot = getSlotNumberFromHour(currentHour);
 
-        // 4) Si después de 21:00 → after_window
-        if (currentSlot === null) {
-          setError("after_window");
-          setWindowState("after");
-          setWindowInfo({
-            start: "09:00:00",
-            end: "21:00:00",
-            currentTime: currentTime,
-          });
-          setLoading(false);
-          executedRef.current = false;
-          return;
-        }
+          // 4) Si después de 21:00 → after_window
+          if (currentSlot === null) {
+            setError("after_window");
+            setWindowState("after");
+            setWindowInfo({
+              start: "09:00:00",
+              end: "21:00:00",
+              currentTime: currentTime,
+            });
+            setLoading(false);
+            executedRef.current = false;
+            return;
+          }
 
-        // 5) Asegurar que los schedules existen
-        const ok = await ensureUserSchedule(userId, "24h_sprint");
-        if (!ok) {
-          console.error("❌ ensureUserSchedule devolvió false para 24h_sprint", { userId });
-          setError("no_schedule");
-          setWindowState(null);
-          setLoading(false);
-          executedRef.current = false;
-          return;
-        }
+          // 5) Asegurar que los schedules existen
+          const ok = await ensureUserSchedule(userId, "24h_sprint");
+          if (!ok) {
+            console.error("❌ ensureUserSchedule devolvió false para 24h_sprint", { userId });
+            setQuestion(null);
+            setError("no_schedule");
+            setWindowState(null);
+            setLoading(false);
+            executedRef.current = false;
+            return;
+          }
 
-        // 6) Buscar schedule para el slot actual - SIEMPRE filtrar por user_id
-        console.log("🔎 Buscando schedule 24h", { userId, today, currentSlot });
-        const { data: scheduleData, error: scheduleQueryError } = await supabase
-          .from("r4w_ia_daily_schedule")
-          .select("*")
-          .eq("race_type", "24h_sprint")
-          .eq("user_id", userId)
-          .eq("run_date", today)
-          .eq("slot_number", currentSlot)
-          .limit(1)
-          .maybeSingle();
+          // 6) Buscar schedule para el slot actual - SIEMPRE filtrar por user_id
+          console.log("🔎 Buscando schedule 24h", { userId, today, currentSlot });
+          const { data: scheduleData, error: scheduleQueryError } = await supabase
+            .from("r4w_ia_daily_schedule")
+            .select("*")
+            .eq("race_type", "24h_sprint")
+            .eq("user_id", userId)
+            .eq("run_date", today)
+            .eq("slot_number", currentSlot)
+            .limit(1)
+            .maybeSingle();
 
-        // 7) Si hay error en la query
-        if (scheduleQueryError) {
-          console.error("❌ Error obteniendo schedule 24h", {
-            message: scheduleQueryError.message,
-            details: scheduleQueryError.details,
-            hint: scheduleQueryError.hint,
-            code: scheduleQueryError.code,
-            userId,
-            today,
-            currentSlot,
-          });
-          setError("error_carga");
-          setWindowState(null);
-          setLoading(false);
-          executedRef.current = false;
-          return;
-        }
+          // 7) Si hay error en la query
+          if (scheduleQueryError) {
+            console.error("❌ Error obteniendo schedule 24h", {
+              message: scheduleQueryError.message,
+              details: scheduleQueryError.details,
+              hint: scheduleQueryError.hint,
+              code: scheduleQueryError.code,
+              userId,
+              today,
+              currentSlot,
+            });
+            setQuestion(null);
+            setError("error_carga");
+            setWindowState(null);
+            setLoading(false);
+            executedRef.current = false;
+            return;
+          }
 
-        // 8) Si no hay schedule
-        if (!scheduleData) {
-          console.warn("⚠️ 24h_sprint: no hay schedule válido para este slot", { userId, currentSlot, today });
-          setQuestion(null);
-          setWindowState(null);
-          setError("no_schedule");
-          setLoading(false);
-          executedRef.current = false;
-          return;
-        }
+          // 8) Si no hay schedule
+          if (!scheduleData) {
+            console.warn("⚠️ 24h_sprint: no hay schedule válido para este slot", { userId, currentSlot, today });
+            setQuestion(null);
+            setError("no_schedule");
+            setWindowState(null);
+            setLoading(false);
+            executedRef.current = false;
+            return;
+          }
 
-        console.log("✅ Schedule 24h encontrado", { scheduleId: scheduleData.id, slotNumber: currentSlot, bank_question_id: scheduleData.bank_question_id });
+          console.log("✅ 24h_sprint schedule encontrado", scheduleData);
 
-        // 9) Si bank_question_id es null
-        if (!scheduleData.bank_question_id) {
-          console.warn("⚠️ 24h_sprint: no hay schedule válido para este slot (bank_question_id es NULL)", {
-            scheduleId: scheduleData.id,
-            userId,
-            slotNumber: currentSlot,
-          });
-          setQuestion(null);
-          setWindowState(null);
-          setError("no_schedule");
-          setLoading(false);
-          executedRef.current = false;
-          return;
-        }
+          // 9) Si bank_question_id es null
+          if (!scheduleData.bank_question_id) {
+            console.warn("⚠️ 24h_sprint: no hay schedule válido para este slot (bank_question_id es NULL)", {
+              scheduleId: scheduleData.id,
+              userId,
+              slotNumber: currentSlot,
+            });
+            setQuestion(null);
+            setError("no_schedule");
+            setWindowState(null);
+            setLoading(false);
+            executedRef.current = false;
+            return;
+          }
 
-        // 10) Obtener pregunta del banco
-        const { data: questionData, error: questionError } = await supabase
-          .from("r4w_question_bank")
-          .select("id, question_text, option_a, option_b, option_c, correct_option")
-          .eq("id", scheduleData.bank_question_id)
-          .single();
+          // 10) Obtener pregunta del banco
+          console.log("🔁 24h_sprint leyendo pregunta", { bankQuestionId: scheduleData.bank_question_id });
+          const { data: questionData, error: questionError } = await supabase
+            .from("r4w_question_bank")
+            .select("id, question_text, option_a, option_b, option_c, correct_option")
+            .eq("id", scheduleData.bank_question_id)
+            .single();
 
-        // 11) Si hay error obteniendo la pregunta
-        if (questionError) {
-          console.error("❌ 24h_sprint: error o pregunta no encontrada en r4w_question_bank", {
-            bank_question_id: scheduleData.bank_question_id,
-            bankError: {
-              message: questionError.message,
-              details: questionError.details,
-              hint: questionError.hint,
-              code: questionError.code,
-            },
-            bankData: null,
-          });
-          setQuestion(null);
-          setWindowState(null);
-          setError("error_carga");
-          setLoading(false);
-          executedRef.current = false;
-          return;
-        }
+          // 11) Si hay error obteniendo la pregunta
+          if (questionError) {
+            console.error("❌ 24h_sprint: error o pregunta no encontrada en r4w_question_bank", {
+              bank_question_id: scheduleData.bank_question_id,
+              bankError: {
+                message: questionError.message,
+                details: questionError.details,
+                hint: questionError.hint,
+                code: questionError.code,
+              },
+              bankData: null,
+            });
+            setQuestion(null);
+            setError("error_carga");
+            setWindowState(null);
+            setLoading(false);
+            executedRef.current = false;
+            return;
+          }
 
-        // 12) Si no hay pregunta
-        if (!questionData) {
-          console.error("❌ 24h_sprint: error o pregunta no encontrada en r4w_question_bank", {
-            bank_question_id: scheduleData.bank_question_id,
-            bankError: questionError,
-            bankData: questionData,
-          });
-          setQuestion(null);
-          setWindowState(null);
-          setError("error_carga");
-          setLoading(false);
-          executedRef.current = false;
-          return;
-        }
+          // 12) Si no hay pregunta
+          if (!questionData) {
+            console.error("❌ 24h_sprint: error o pregunta no encontrada en r4w_question_bank", {
+              bank_question_id: scheduleData.bank_question_id,
+              bankError: questionError,
+              bankData: questionData,
+            });
+            setQuestion(null);
+            setError("error_carga");
+            setWindowState(null);
+            setLoading(false);
+            executedRef.current = false;
+            return;
+          }
 
-        // 13) Construir objeto question normalizado
-        const windowStart = scheduleData.window_start as string;
-        const windowEnd = scheduleData.window_end as string;
+          console.log("✅ 24h_sprint pregunta cargada", questionData);
 
-        // Verificar estado de ventana ANTES de construir la pregunta
-        const state = getWindowState(currentTime, windowStart, windowEnd);
-        
-        if (state === "before") {
-          setError("before_window");
-          setWindowState("before");
+          // 13) Construir objeto question normalizado
+          const windowStart = scheduleData.window_start as string;
+          const windowEnd = scheduleData.window_end as string;
+
+          // Verificar estado de ventana ANTES de construir la pregunta
+          const state = getWindowState(currentTime, windowStart, windowEnd);
+          
+          if (state === "before") {
+            setError("before_window");
+            setWindowState("before");
+            setWindowInfo({
+              start: windowStart,
+              end: windowEnd,
+              currentTime: currentTime,
+            });
+            setLoading(false);
+            executedRef.current = false;
+            return;
+          }
+
+          if (state === "after") {
+            setError("after_window");
+            setWindowState("after");
+            setWindowInfo({
+              start: windowStart,
+              end: windowEnd,
+              currentTime: currentTime,
+            });
+            setLoading(false);
+            executedRef.current = false;
+            return;
+          }
+
+          // Construir opciones como array de strings
+          const optionsArray = [questionData.option_a, questionData.option_b, questionData.option_c];
+
+          // Construir objeto normalizado
+          const normalizedQuestion: DailyQuestion = {
+            questionId: questionData.id,
+            scheduleId: scheduleData.id as number,
+            question: questionData.question_text,
+            options: optionsArray,
+            dayNumber: scheduleData.day_number,
+            windowStart: windowStart,
+            windowEnd: windowEnd,
+            correctOption: questionData.correct_option,
+          };
+
+          console.log("🎯 24h_sprint pregunta normalizada", normalizedQuestion);
+
+          // Establecer estados en el orden correcto
+          setQuestion(normalizedQuestion);
+          setWindowState("active");
           setWindowInfo({
             start: windowStart,
             end: windowEnd,
             currentTime: currentTime,
           });
+          setError(null);
           setLoading(false);
           executedRef.current = false;
           return;
-        }
-
-        if (state === "after") {
-          setError("after_window");
-          setWindowState("after");
-          setWindowInfo({
-            start: windowStart,
-            end: windowEnd,
-            currentTime: currentTime,
+        } catch (err: any) {
+          console.error("❌ Error crítico en 24h_sprint:", {
+            message: err?.message || String(err),
+            stack: err?.stack,
           });
+          setQuestion(null);
+          setError("error_carga");
+          setWindowState(null);
           setLoading(false);
           executedRef.current = false;
           return;
+        } finally {
+          // Garantizar que loading siempre se pone a false
+          // (aunque ya se haya puesto en cada return, esto es una seguridad extra)
         }
-
-        // Construir opciones como array de strings
-        const optionsArray = [questionData.option_a, questionData.option_b, questionData.option_c];
-
-        // Construir objeto normalizado
-        const normalizedQuestion: DailyQuestion = {
-          questionId: questionData.id,
-          scheduleId: scheduleData.id as number,
-          question: questionData.question_text,
-          options: optionsArray,
-          dayNumber: scheduleData.day_number,
-          windowStart: windowStart,
-          windowEnd: windowEnd,
-          correctOption: questionData.correct_option,
-        };
-
-        // Establecer estados en el orden correcto
-        setQuestion(normalizedQuestion);
-        setWindowState("active");
-        setWindowInfo({
-          start: windowStart,
-          end: windowEnd,
-          currentTime: currentTime,
-        });
-        setError(null);
-        setLoading(false);
-        executedRef.current = false;
-        
-        console.log("✅ 24h_sprint: pregunta normalizada lista", normalizedQuestion);
-        return;
       }
 
       // Lógica para 7d_mvp (comportamiento original)
