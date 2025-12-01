@@ -7,7 +7,6 @@ import { supabase } from "../lib/supabaseClient";
 import { useWishes } from "../hooks/useWishes";
 import { useUser } from "../hooks/useUser";
 import { ensureSimulatedRunners } from "../lib/simulatedRunners";
-import { createUserScheduleFor7dMvp } from "../lib/userSchedule";
 
 const INITIAL_WISHES = 5;
 
@@ -221,10 +220,24 @@ export default function RegistroPage() {
       // 5) Crear schedule personalizado de 7 días para el usuario
       // IMPORTANTE: Lo hacemos en background para no bloquear el registro
       // Si falla, el usuario puede seguir usando la app y el schedule se creará automáticamente cuando acceda a /pregunta
-      createUserScheduleFor7dMvp(createdUser.id).catch((err) => {
-        console.error("❌ Error creando schedule personalizado (no crítico):", err);
-        // No bloqueamos el registro, el schedule se creará automáticamente cuando acceda a /pregunta
-      });
+      // Usamos la API route para asegurar que se cree correctamente
+      fetch("/api/user/create-schedule", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ userId: createdUser.id }),
+      })
+        .then((res) => res.json())
+        .then((result) => {
+          if (result.success) {
+            console.log("✅ Schedule creado correctamente en registro");
+          } else {
+            console.warn("⚠️ Error creando schedule en registro (no crítico):", result.error);
+          }
+        })
+        .catch((err) => {
+          console.warn("⚠️ Error llamando a API create-schedule en registro (no crítico):", err);
+          // No bloqueamos el registro, el schedule se creará automáticamente cuando acceda a /pregunta
+        });
 
       // 6) Redirigir al panel
       router.push("/panel");

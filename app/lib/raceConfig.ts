@@ -48,3 +48,4 @@ export function getRaceConfig(raceType: string): RaceConfig {
   return RACE_CONFIG[raceType] || RACE_CONFIG["7d_mvp"];
 }
 
+

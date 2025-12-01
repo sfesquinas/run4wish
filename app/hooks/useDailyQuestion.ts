@@ -95,12 +95,17 @@ export function useDailyQuestion(raceType: string = "7d_mvp"): DailyQuestionStat
                   fetchDailyQuestion();
                 }, 1500);
                 return;
+              } else {
+                // Si no se pudo crear, loguear pero continuar (no bloquear)
+                console.warn("⚠️ No se pudo crear el schedule, continuando con búsqueda...");
               }
-            } catch (err) {
-              console.error("Error intentando crear schedule:", err);
+            } catch (err: any) {
+              // Error al crear schedule: loguear pero no bloquear el flujo
+              const errorMsg = err?.message || String(err) || "Error desconocido";
+              console.warn("⚠️ Error intentando crear schedule (continuando):", errorMsg);
             }
           }
-          // Si no se pudo crear, continuar con el flujo normal (fallback a global)
+          // Continuar con el flujo normal (fallback a global o mostrar error)
           scheduleError = startDateError;
         } else if (startDateError) {
           // Error real, no solo "no encontrado"
@@ -235,24 +240,73 @@ export function useDailyQuestion(raceType: string = "7d_mvp"): DailyQuestionStat
                 return;
               }
             } catch (err) {
-              console.error("Error intentando crear schedule:", err);
+              console.warn("⚠️ Error intentando crear schedule:", err instanceof Error ? err.message : String(err));
             }
           }
         } else if (errorCode === "42P01") {
           // Tabla no existe - error crítico
           console.error("❌ La tabla r4w_ia_daily_schedule no existe");
         } else {
-          // Otro tipo de error
-          console.error("Error obteniendo schedule:", {
-            code: errorCode,
-            message: errorMessage,
-            error: scheduleError,
-          });
+          // Otro tipo de error - solo loguear si hay información útil
+          if (errorCode || (errorMessage && errorMessage !== "Error desconocido" && errorMessage !== "[object Object]")) {
+            console.warn("⚠️ Error obteniendo schedule:", {
+              code: errorCode || "sin código",
+              message: errorMessage,
+            });
+          }
+          // Si el error es vacío o no tiene información útil, no loguear nada
         }
         
-        setError("no_schedule");
-        setLoading(false);
-        return;
+        // Solo mostrar "no_schedule" si el usuario NO está en su primera semana (días 1-7)
+        // Durante la primera semana, siempre debe haber una pregunta disponible
+        let shouldShowNoSchedule = true;
+        if (userId && raceType === "7d_mvp") {
+          // Verificar si el usuario está en su primera semana
+          try {
+            const { data: startDateData } = await supabase
+              .from("r4w_ia_daily_schedule")
+              .select("run_date")
+              .eq("race_type", raceType)
+              .eq("user_id", userId)
+              .order("run_date", { ascending: true })
+              .limit(1)
+              .maybeSingle();
+            
+            if (startDateData) {
+              const registrationDate = new Date(startDateData.run_date + "T00:00:00");
+              const todayDate = new Date(today + "T00:00:00");
+              const diffTime = todayDate.getTime() - registrationDate.getTime();
+              const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
+              const userDay = diffDays + 1;
+              const isInFirstWeek = userDay >= 1 && userDay <= 7;
+              
+              if (isInFirstWeek) {
+                // Durante la primera semana, intentar crear el schedule en lugar de mostrar error
+                console.log(`📅 Usuario en primera semana (día ${userDay}), intentando crear schedule...`);
+                shouldShowNoSchedule = false;
+                try {
+                  const created = await ensureUserSchedule(userId);
+                  if (created) {
+                    setTimeout(() => {
+                      fetchDailyQuestion();
+                    }, 1500);
+                    return;
+                  }
+                } catch (err) {
+                  console.warn("⚠️ Error creando schedule en primera semana:", err);
+                }
+              }
+            }
+          } catch (err) {
+            console.warn("⚠️ Error verificando primera semana:", err);
+          }
+        }
+        
+        if (shouldShowNoSchedule) {
+          setError("no_schedule");
+          setLoading(false);
+          return;
+        }
       }
 
       // Si no hay schedule pero tampoco hay error, intentar crear uno
@@ -268,7 +322,40 @@ export function useDailyQuestion(raceType: string = "7d_mvp"): DailyQuestionStat
               return;
             }
           } catch (err) {
-            console.error("Error intentando crear schedule:", err);
+            console.warn("⚠️ Error intentando crear schedule:", err);
+          }
+          
+          // Verificar si está en primera semana antes de mostrar error
+          try {
+            const { data: startDateData } = await supabase
+              .from("r4w_ia_daily_schedule")
+              .select("run_date")
+              .eq("race_type", raceType)
+              .eq("user_id", userId)
+              .order("run_date", { ascending: true })
+              .limit(1)
+              .maybeSingle();
+            
+            if (startDateData) {
+              const registrationDate = new Date(startDateData.run_date + "T00:00:00");
+              const todayDate = new Date(today + "T00:00:00");
+              const diffTime = todayDate.getTime() - registrationDate.getTime();
+              const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
+              const userDay = diffDays + 1;
+              const isInFirstWeek = userDay >= 1 && userDay <= 7;
+              
+              if (isInFirstWeek) {
+                // Durante la primera semana, no mostrar "no_schedule"
+                // En su lugar, mostrar un estado de carga o reintentar
+                console.log(`📅 Usuario en primera semana (día ${userDay}), reintentando...`);
+                setTimeout(() => {
+                  fetchDailyQuestion();
+                }, 2000);
+                return;
+              }
+            }
+          } catch (err) {
+            console.warn("⚠️ Error verificando primera semana:", err);
           }
         }
         setError("no_schedule");

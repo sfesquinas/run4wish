@@ -250,16 +250,19 @@ export default function PreguntaPage() {
   }
 
   if (questionError === "no_schedule") {
+    // Durante la primera semana (días 1-7), no mostrar este mensaje
+    // El hook useDailyQuestion ya debería haber intentado crear el schedule
+    // Si llegamos aquí, mostrar un mensaje de carga o reintentar
     return (
       <main className="r4w-question-page">
         <section className="r4w-question-layout">
           <div className="r4w-question-card-standalone">
-            <div className="r4w-question-status">Sin pregunta programada</div>
+            <div className="r4w-question-status">Preparando tu pregunta...</div>
             <h1 className="r4w-question-title" style={{ marginBottom: 8 }}>
-              {getQuestionMessage("no_schedule")}
+              Estamos preparando tu pregunta del día
             </h1>
             <p className="r4w-question-subtitle" style={{ marginTop: 8 }}>
-              Vuelve mañana para seguir participando en la carrera.
+              Por favor, espera un momento mientras cargamos tu pregunta.
             </p>
             <Link href="/panel" className="r4w-primary-btn" style={{ marginTop: 16 }}>
               Volver a mi panel

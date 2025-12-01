@@ -82,3 +82,4 @@ export function useSimulateDailyProgress(dayNumber: number) {
   return { simulated, loading };
 }
 
+

@@ -111,3 +111,4 @@ WHERE table_name = 'r4w_ia_daily_schedule';
 3. **Revisa los logs de error:**
    - Los errores detallados aparecerán en la consola del navegador o en los logs de Supabase
 
+

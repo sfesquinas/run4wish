@@ -20,12 +20,15 @@ export async function ensureUserSchedule(userId: string): Promise<boolean> {
       .eq("user_id", userId);
 
     if (error) {
-      console.error("Error verificando schedule:", error);
-      // Si es error de "no encontrado", intentar crear
-      if (error.code === "PGRST116") {
+      // Si es error de "no encontrado" (tabla vacía o no existe), intentar crear
+      if (error.code === "PGRST116" || error.code === "42P01") {
+        console.log(`📅 No se encontró schedule para usuario ${userId}, creando uno nuevo...`);
         return await createScheduleViaAPI(userId);
       }
-      return false;
+      // Otros errores: loguear pero no bloquear
+      console.warn(`⚠️ Error verificando schedule:`, error.message || error.code || "Error desconocido");
+      // Intentar crear de todas formas si parece que no hay schedule
+      return await createScheduleViaAPI(userId);
     }
 
     // Verificar que tenga los 7 días
@@ -66,16 +69,33 @@ async function createScheduleViaAPI(userId: string): Promise<boolean> {
     });
 
     if (!response.ok) {
-      const errorData = await response.json().catch(() => ({}));
-      console.error("Error creando schedule:", errorData);
+      // Intentar obtener el mensaje de error
+      let errorMessage = `HTTP ${response.status}`;
+      try {
+        const errorData = await response.json();
+        errorMessage = errorData.error || errorData.message || errorMessage;
+        console.warn(`⚠️ Error creando schedule (${response.status}):`, errorMessage);
+      } catch {
+        // Si no se puede parsear el JSON, usar el status
+        const text = await response.text().catch(() => "");
+        errorMessage = text || errorMessage;
+        console.warn(`⚠️ Error creando schedule (${response.status}):`, errorMessage || "Sin detalles");
+      }
       return false;
     }
 
     const result = await response.json();
-    console.log(`✅ Schedule creado para usuario ${userId}:`, result);
-    return true;
+    if (result.success) {
+      console.log(`✅ Schedule creado para usuario ${userId}`);
+      return true;
+    } else {
+      console.warn(`⚠️ Schedule no se creó correctamente:`, result.error || result.message);
+      return false;
+    }
   } catch (err: any) {
-    console.error("Error llamando a API create-schedule:", err);
+    // Error de red o parsing
+    const errorMessage = err?.message || String(err) || "Error desconocido";
+    console.warn(`⚠️ Error llamando a API create-schedule:`, errorMessage);
     return false;
   }
 }

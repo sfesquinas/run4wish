@@ -160,9 +160,21 @@ export async function createUserScheduleFor7dMvp(userId: string): Promise<void> 
     }
 
     // Agrupar por day_number y tomar la primera de cada día
+    // IMPORTANTE: question_id es UUID (string) según el esquema de la tabla
     const questionsByDay = new Map<number, string>();
     for (const q of questions) {
       if (!questionsByDay.has(q.day_number)) {
+        // question_id es UUID (string), usarlo directamente
+        if (!q.id || typeof q.id !== 'string') {
+          throw new Error(`question_id debe ser UUID (string), pero se recibió: ${q.id} (tipo: ${typeof q.id})`);
+        }
+        
+        // Validar formato UUID básico (opcional, pero recomendado)
+        const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+        if (!uuidRegex.test(q.id)) {
+          console.warn(`⚠️ question_id no tiene formato UUID estándar: ${q.id}, pero se usará de todas formas`);
+        }
+        
         questionsByDay.set(q.day_number, q.id);
       }
     }
@@ -175,46 +187,33 @@ export async function createUserScheduleFor7dMvp(userId: string): Promise<void> 
     const startDate = new Date();
     const startDateStr = startDate.toISOString().split("T")[0]; // YYYY-MM-DD
 
-    // 4. Calcular ventana para el día 1 (hora actual redondeada hacia abajo)
-    const currentTime = roundDownToMinute(startDate);
-    const day1WindowStart = currentTime;
-    const day1WindowEnd = calculateDay1WindowEnd(currentTime);
+    // 4. Ventana horaria: todas las preguntas están disponibles de 00:00:00 a 23:59:59
+    const windowStart = "00:00:00";
+    const windowEnd = "23:59:59";
 
     // 5. Crear los 7 schedules
     // IMPORTANTE: Todos los schedules tendrán run_date = startDateStr (fecha de registro)
     // El día se determina por day_number, no por run_date
     // Esto permite que cada usuario tenga su propio calendario desde su día de registro
+    // Todas las preguntas están disponibles durante todo el día (00:00 - 23:59)
     const schedules = [];
 
     for (let dayNumber = 1; dayNumber <= 7; dayNumber++) {
       const questionId = questionsByDay.get(dayNumber);
-      if (!questionId) {
-        throw new Error(`No se encontró pregunta para el día ${dayNumber}`);
-      }
-
-      let windowStart: string;
-      let windowEnd: string;
-
-      if (dayNumber === 1) {
-        // Día 1: ventana desde ahora hasta +2 horas (máx 21:00)
-        windowStart = day1WindowStart;
-        windowEnd = day1WindowEnd;
-      } else {
-        // Días 2-7: ventana aleatoria de 1 hora entre 09:00 y 21:00
-        const timeWindow = generateRandomTimeWindow(9, 20);
-        windowStart = timeWindow.start;
-        windowEnd = timeWindow.end;
+      if (!questionId || typeof questionId !== 'string') {
+        throw new Error(`No se encontró pregunta válida (UUID) para el día ${dayNumber}`);
       }
 
       // Todos los schedules tienen la misma run_date (fecha de inicio)
       // El día se determina por day_number y se calcula dinámicamente según días transcurridos
+      // Ventana completa del día: 00:00:00 - 23:59:59
       schedules.push({
         race_type: RACE_TYPE,
         day_number: dayNumber,
-        question_id: questionId,
+        question_id: questionId, // UUID (string)
         run_date: startDateStr, // Fecha de registro (igual para todos los días)
-        window_start: windowStart,
-        window_end: windowEnd,
+        window_start: windowStart, // 00:00:00
+        window_end: windowEnd, // 23:59:59
         user_id: userId,
       });
     }
@@ -232,6 +231,14 @@ export async function createUserScheduleFor7dMvp(userId: string): Promise<void> 
       console.error("Hint:", insertError.hint);
       console.error("Código:", insertError.code);
       console.error("Error completo:", JSON.stringify(insertError, Object.getOwnPropertyNames(insertError)));
+      console.error("Schedules que se intentaron insertar:", JSON.stringify(schedules, null, 2));
+      
+      // Verificar si el error es por tipo de dato incorrecto en question_id
+      if (insertError.message?.includes("question_id") || insertError.message?.includes("invalid input") || insertError.message?.includes("syntax") || insertError.message?.includes("uuid")) {
+        const errorMsg = `Error de tipo de dato en question_id. Verifica que r4w_ia_daily_schedule.question_id sea UUID y coincida con r4w_ia_questions.id. Detalles: ${insertError.message}`;
+        console.error("⚠️", errorMsg);
+        throw new Error(errorMsg);
+      }
       
       // Verificar si el error es porque falta la columna user_id (migración no ejecutada)
       if (insertError.message?.includes("column") && (insertError.message?.includes("user_id") || insertError.message?.includes("does not exist"))) {
@@ -280,10 +287,9 @@ export async function updateNextDaySchedule(
       return null;
     }
 
-    // Generar ventana horaria aleatoria de 1 hora
-    const startHour = Math.floor(Math.random() * 12) + 9; // 9-20
-    const windowStart = `${String(startHour).padStart(2, "0")}:00:00`;
-    const windowEnd = `${String(startHour + 1).padStart(2, "0")}:00:00`;
+      // Ventana completa del día: 00:00:00 - 23:59:59
+      const windowStart = "00:00:00";
+      const windowEnd = "23:59:59";
 
     // Calcular fecha de mañana
     const tomorrow = new Date();
@@ -346,8 +352,8 @@ export async function updateNextDaySchedule(
           day_number: nextDay,
           question_id: question.id,
           run_date: tomorrowDateStr,
-          window_start: windowStart,
-          window_end: windowEnd,
+          window_start: "00:00:00", // Ventana completa del día
+          window_end: "23:59:59", // Ventana completa del día
           user_id: userId,
         });
 

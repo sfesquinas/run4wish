@@ -10,7 +10,7 @@ CREATE TABLE IF NOT EXISTS r4w_ia_daily_schedule (
   id SERIAL PRIMARY KEY,
   race_type VARCHAR(50) NOT NULL,
   day_number INTEGER NOT NULL,
-  question_id INTEGER NOT NULL,
+  question_id UUID NOT NULL,
   run_date DATE NOT NULL,
   window_start TIME NOT NULL,
   window_end TIME NOT NULL,
@@ -105,4 +105,5 @@ ORDER BY ordinal_position;
 -- 2. /api/admin/generate-questions (para crear las preguntas)
 -- 3. Los schedules se crearán automáticamente cuando los usuarios se registren
 -- ============================================
+
 

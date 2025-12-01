@@ -29,39 +29,69 @@ export function useUser() {
     const fetchUserAndProfile = async () => {
       setLoading(true);
 
-      // 1) Obtener sesión actual
-      const { data: sessionData } = await supabase.auth.getSession();
-      const currentUser = sessionData.session?.user ?? null;
-
-      if (!isMounted) return;
-
-      setUser(currentUser);
-
-      if (currentUser?.id) {
-        // 2) Cargar perfil de r4w_profiles
-        const { data: profileData, error: profileError } = await supabase
-          .from("r4w_profiles")
-          .select("*")
-          .eq("id", currentUser.id)
-          .single();
+      try {
+        // 1) Obtener sesión actual
+        const { data: sessionData, error: sessionError } = await supabase.auth.getSession();
+        
+        // Manejar errores de refresh token silenciosamente
+        if (sessionError) {
+          // Si es un error de refresh token, simplemente no hay sesión válida
+          if (sessionError.message?.includes("Refresh Token") || 
+              sessionError.message?.includes("refresh_token") ||
+              (sessionError as any).status === 401) {
+            console.log("ℹ️ Sesión expirada o inválida, usuario no autenticado");
+            if (isMounted) {
+              setUser(null);
+              setProfile(null);
+              setWishes(0);
+              setLoading(false);
+            }
+            return;
+          }
+          // Para otros errores, loguear pero continuar
+          console.warn("⚠️ Error obteniendo sesión:", sessionError.message);
+        }
+        
+        const currentUser = sessionData?.session?.user ?? null;
 
         if (!isMounted) return;
 
-        if (!profileError && profileData) {
-          setProfile(profileData as R4WProfile);
-          setWishes(profileData.wishes ?? 0);
+        setUser(currentUser);
+
+        if (currentUser?.id) {
+          // 2) Cargar perfil de r4w_profiles
+          const { data: profileData, error: profileError } = await supabase
+            .from("r4w_profiles")
+            .select("*")
+            .eq("id", currentUser.id)
+            .single();
+
+          if (!isMounted) return;
+
+          if (!profileError && profileData) {
+            setProfile(profileData as R4WProfile);
+            setWishes(profileData.wishes ?? 0);
+          } else {
+            // si no hay perfil aún, lo dejamos en null
+            setProfile(null);
+            setWishes(0);
+          }
         } else {
-          // si no hay perfil aún, lo dejamos en null
           setProfile(null);
           setWishes(0);
         }
-      } else {
-        setProfile(null);
-        setWishes(0);
-      }
-
-      if (isMounted) {
-        setLoading(false);
+      } catch (err: any) {
+        // Manejar errores inesperados
+        console.warn("⚠️ Error inesperado en fetchUserAndProfile:", err?.message || err);
+        if (isMounted) {
+          setUser(null);
+          setProfile(null);
+          setWishes(0);
+        }
+      } finally {
+        if (isMounted) {
+          setLoading(false);
+        }
       }
     };
 
@@ -72,10 +102,32 @@ export function useUser() {
     const {
       data: { subscription },
     } = supabase.auth.onAuthStateChange(
-      (_event: AuthChangeEvent, session: Session | null) => {
+      async (_event: AuthChangeEvent, session: Session | null) => {
         if (!isMounted) return;
         const currentUser = session?.user ?? null;
         setUser(currentUser);
+        
+        // Si hay un nuevo login, recargar el perfil
+        if (currentUser?.id) {
+          try {
+            const { data: profileData, error: profileError } = await supabase
+              .from("r4w_profiles")
+              .select("*")
+              .eq("id", currentUser.id)
+              .single();
+
+            if (!profileError && profileData) {
+              setProfile(profileData as R4WProfile);
+              setWishes(profileData.wishes ?? 0);
+            }
+          } catch (err) {
+            // Silenciar errores al recargar perfil después de login
+            console.warn("⚠️ Error recargando perfil después de login:", err);
+          }
+        } else {
+          setProfile(null);
+          setWishes(0);
+        }
       }
     );
 

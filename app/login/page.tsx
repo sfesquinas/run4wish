@@ -74,7 +74,17 @@ export default function LoginPage() {
           setWishes(() => wishesFromProfile);
       }
 
-      // 3) Redirigir al panel
+      // 3) Asegurar que el usuario tiene un schedule (en background, no bloquea)
+      // Si no tiene schedule, se creará automáticamente cuando acceda a /pregunta
+      // Pero lo intentamos aquí para que esté listo
+      import("../lib/checkUserSchedule").then(({ ensureUserSchedule }) => {
+        ensureUserSchedule(user.id).catch((err) => {
+          console.warn("⚠️ Error verificando/creando schedule en login (no crítico):", err);
+          // No bloqueamos el login, el schedule se creará automáticamente cuando acceda a /pregunta
+        });
+      });
+
+      // 4) Redirigir al panel
       router.push("/panel");
     } catch (err: any) {
       console.error(err);

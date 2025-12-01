@@ -55,13 +55,19 @@ export function getQuestionMessage(
 
 /**
  * Determina el estado de la ventana horaria
+ * Si la ventana es 00:00:00 - 23:59:59, siempre devuelve "active" durante el día
  */
 export function getWindowState(
   currentTime: string,
   windowStart: string,
   windowEnd: string
 ): "before" | "active" | "after" {
-  // Comparar strings en formato HH:MM:SS
+  // Si la ventana es completa del día (00:00:00 - 23:59:59), siempre está activa
+  if (windowStart === "00:00:00" && windowEnd === "23:59:59") {
+    return "active";
+  }
+  
+  // Para ventanas personalizadas, comparar strings en formato HH:MM:SS
   if (currentTime < windowStart) return "before";
   if (currentTime > windowEnd) return "after";
   return "active";
