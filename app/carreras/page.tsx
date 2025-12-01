@@ -26,7 +26,7 @@ type InsufficientWishesState = {
 
 const activeRace = {
   id: "r7",
-  name: "Carrera 7 días · MVP",
+  name: "Constancia MVP",
   duration: "7 días · 1 pregunta al día",
   questions:
     "La pregunta aparece en un horario aleatorio entre las 09:00 y las 00:00 (hora local).",
@@ -36,7 +36,7 @@ const activeRace = {
 const upcomingRaces = [
   {
     id: "u1",
-    name: "Carrera 24h · Sprint",
+    name: "Sprint",
     duration: "1 día · 12 preguntas",
     questions:
       "Una pregunta cada hora desde las 10:00 hasta las 20:00. Aparecerá en un minuto aleatorio dentro de cada hora.",
@@ -45,7 +45,7 @@ const upcomingRaces = [
   },
   {
     id: "u2",
-    name: "Carrera 7 días · Constancia",
+    name: "Constancia",
     duration: "7 días · 1 pregunta al día",
     questions:
       "La pregunta aparece en un horario aleatorio entre las 09:00 y las 00:00 (hora local).",
@@ -54,7 +54,7 @@ const upcomingRaces = [
   },
   {
     id: "u3",
-    name: "Carrera 30 días · Maratón",
+    name: "Maratón",
     duration: "30 días · 1 pregunta al día",
     questions:
       "La pregunta aparece en un horario aleatorio entre las 09:00 y las 00:00.",
@@ -148,15 +148,28 @@ export default function CarrerasPage() {
           <header className="r4w-races-header">
             <div>
               <h1 className="r4w-section-title">R4W · Carreras activas</h1>
-              <p className="r4w-section-subtitle">
-                Aquí verás en qué carrera estás compitiendo ahora mismo.
-              </p>
             </div>
           </header>
 
           <div className="r4w-race-card">
             <div className="r4w-race-name-row">
-              <span className="r4w-race-name">{activeRace.name}</span>
+              <div style={{ display: "flex", alignItems: "center", gap: "8px", flex: 1 }}>
+                <span className="r4w-race-name">{activeRace.name}</span>
+                <button
+                  type="button"
+                  className="r4w-race-reward-icon-btn"
+                  onClick={() =>
+                    setPrize({
+                      raceName: activeRace.name,
+                      reward: activeRace.reward,
+                    })
+                  }
+                  aria-label="Ver premio"
+                  style={{ padding: "4px", background: "transparent", border: "none" }}
+                >
+                  <span className="r4w-race-reward-icon">🏆</span>
+                </button>
+              </div>
               <button
                 type="button"
                 className="r4w-info-icon"
@@ -172,32 +185,13 @@ export default function CarrerasPage() {
               </button>
             </div>
 
-            <div className="r4w-race-reward-row">
-              <button
-                type="button"
-                className="r4w-race-reward-icon-btn"
-                onClick={() =>
-                  setPrize({
-                    raceName: activeRace.name,
-                    reward: activeRace.reward,
-                  })
-                }
-                aria-label="Ver premio"
-              >
-                <span className="r4w-race-reward-icon">🏆</span>
-              </button>
-            </div>
-
             <div className="r4w-race-footer">
-              <span>
-                Responde la pregunta del día para seguir avanzando en el
-                ranking.
-              </span>
               <Link
                 href={`/carrera/${activeRace.id}`}
-                className="r4w-secondary-btn"
+                className="r4w-primary-btn r4w-race-action-btn"
+                style={{ width: "100%", justifyContent: "center" }}
               >
-                Ir a la carrera <span>🏁</span>
+                Responder a la pregunta <span>🏁</span>
               </Link>
             </div>
           </div>
@@ -205,13 +199,29 @@ export default function CarrerasPage() {
           {/* Carrera 24h Demo */}
           <div className="r4w-race-card" style={{ marginTop: 16 }}>
             <div className="r4w-race-name-row">
-              <span className="r4w-race-name">Carrera 24h · Demo</span>
+              <div style={{ display: "flex", alignItems: "center", gap: "8px", flex: 1 }}>
+                <span className="r4w-race-name">Sprint MVP</span>
+                <button
+                  type="button"
+                  className="r4w-race-reward-icon-btn"
+                  onClick={() =>
+                    setPrize({
+                      raceName: "Sprint MVP",
+                      reward: "Experiencia sprint Run4Wish",
+                    })
+                  }
+                  aria-label="Ver premio"
+                  style={{ padding: "4px", background: "transparent", border: "none" }}
+                >
+                  <span className="r4w-race-reward-icon">🏆</span>
+                </button>
+              </div>
               <button
                 type="button"
                 className="r4w-info-icon"
                 onClick={() =>
                   setInfo({
-                    title: "Carrera 24h · Demo",
+                    title: "Sprint MVP",
                     text: "12 preguntas entre las 09:00 y las 21:00. Ideal para probar la experiencia sprint.",
                   })
                 }
@@ -221,29 +231,13 @@ export default function CarrerasPage() {
               </button>
             </div>
 
-            <div className="r4w-race-reward-row">
-              <button
-                type="button"
-                className="r4w-race-reward-icon-btn"
-                onClick={() =>
-                  setPrize({
-                    raceName: "Carrera 24h · Demo",
-                    reward: "Experiencia sprint Run4Wish",
-                  })
-                }
-                aria-label="Ver premio"
-              >
-                <span className="r4w-race-reward-icon">🏆</span>
-              </button>
-            </div>
-
             <div className="r4w-race-footer">
               <Link
                 href="/pregunta-24h"
-                className="r4w-primary-btn"
+                className="r4w-primary-btn r4w-race-action-btn"
+                style={{ width: "100%", justifyContent: "center" }}
               >
-                Probar carrera 24h
-                <span>🚀</span>
+                Responder a la pregunta <span>🏁</span>
               </Link>
             </div>
           </div>
@@ -262,9 +256,28 @@ export default function CarrerasPage() {
               const alreadyBooked = preregSet.has(race.id);
 
               return (
-                <div key={race.id} className="r4w-race-card">
-                  <div className="r4w-race-name-row">
-                    <span className="r4w-race-name">{race.name}</span>
+                <div key={race.id} className="r4w-race-card" style={{ display: "flex", flexDirection: "column", alignItems: "center", textAlign: "center" }}>
+                  {/* Nombre arriba */}
+                  <div style={{ marginBottom: "12px" }}>
+                    <span className="r4w-race-name" style={{ display: "block" }}>{race.name}</span>
+                  </div>
+
+                  {/* Copa e información en el medio */}
+                  <div style={{ display: "flex", alignItems: "center", gap: "12px", marginBottom: "12px" }}>
+                    <button
+                      type="button"
+                      className="r4w-race-reward-icon-btn"
+                      onClick={() =>
+                        setPrize({
+                          raceName: race.name,
+                          reward: race.reward,
+                        })
+                      }
+                      aria-label="Ver premio"
+                      style={{ padding: "4px", background: "transparent", border: "none" }}
+                    >
+                      <span className="r4w-race-reward-icon">🏆</span>
+                    </button>
                     <button
                       type="button"
                       className="r4w-info-icon"
@@ -280,23 +293,8 @@ export default function CarrerasPage() {
                     </button>
                   </div>
 
-                  <div className="r4w-race-reward-row">
-                    <button
-                      type="button"
-                      className="r4w-race-reward-icon-btn"
-                      onClick={() =>
-                        setPrize({
-                          raceName: race.name,
-                          reward: race.reward,
-                        })
-                      }
-                      aria-label="Ver premio"
-                    >
-                      <span className="r4w-race-reward-icon">🏆</span>
-                    </button>
-                  </div>
-
-                  <div className="r4w-race-footer">
+                  {/* Botón de reserva abajo */}
+                  <div style={{ width: "100%" }}>
                     <button
                       type="button"
                       className={`r4w-secondary-btn ${alreadyBooked ? "r4w-btn-disabled" : ""}`}
@@ -305,6 +303,7 @@ export default function CarrerasPage() {
                         !alreadyBooked &&
                         handlePreregister(race.id, race.costWishes, race.name)
                       }
+                      style={{ width: "100%", justifyContent: "center" }}
                     >
                       {alreadyBooked
                         ? "Plaza reservada ✅"

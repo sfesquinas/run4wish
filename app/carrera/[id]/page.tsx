@@ -24,7 +24,7 @@ type RankingItem = {
 const races: Record<string, Race> = {
   r7: {
     id: "r7",
-    name: "Carrera 7 días · MVP",
+    name: "Constancia MVP",
     daysTotal: 7,
     position: 12,
     totalParticipants: 100,
@@ -68,12 +68,7 @@ export default function CarreraDetallePage() {
           <header className="r4w-race-detail-header">
             <div>
               <h1 className="r4w-race-detail-title">{race.name}</h1>
-              <p className="r4w-race-detail-subtitle">
-                Esta es tu carrera activa. Aquí verás tu avance, tu posición y
-                la pregunta del día.
-              </p>
             </div>
-            <div className="r4w-race-detail-badge">carrera activa</div>
           </header>
 
           {/* Meta */}
@@ -103,7 +98,14 @@ export default function CarreraDetallePage() {
               />
             </div>
 
-            <div className="r4w-race-detail-timeline">
+            <div 
+              className="r4w-race-detail-timeline"
+              style={{
+                ['--progress-width' as any]: daysPlayed > 0 
+                  ? `${((daysPlayed - 1) / (race.daysTotal - 1)) * 100}%`
+                  : '0%'
+              }}
+            >
               {Array.from({ length: race.daysTotal }).map((_, idx) => {
                 const isDone = idx < daysPlayed;
                 const isToday = idx === todayIndex;
@@ -146,8 +148,8 @@ export default function CarreraDetallePage() {
             <div className="r4w-question-actions">
               <Link
                 href="/pregunta"
-                className={questionAvailable ? "r4w-primary-btn" : "r4w-secondary-btn"}
-                style={questionAvailable ? {} : { opacity: 0.6, cursor: "not-allowed", width: "100%", marginBottom: 12 }}
+                className={questionAvailable ? "r4w-primary-btn r4w-race-action-btn" : "r4w-secondary-btn"}
+                style={questionAvailable ? { width: "100%", justifyContent: "center", marginBottom: 12 } : { opacity: 0.6, cursor: "not-allowed", width: "100%", marginBottom: 12 }}
                 onClick={(e) => {
                   if (!questionAvailable) {
                     e.preventDefault();
@@ -156,10 +158,10 @@ export default function CarreraDetallePage() {
               >
                 <span>
                   {questionAvailable
-                    ? "Responder pregunta"
+                    ? "Responder a la pregunta"
                     : "Respuesta ya respondida"}
                 </span>
-                {questionAvailable && <span>➜</span>}
+                {questionAvailable && <span>🏁</span>}
               </Link>
 
               <div style={{ display: "flex", gap: 8, width: "100%" }}>
