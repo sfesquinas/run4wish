@@ -182,9 +182,10 @@ export function useDailyQuestion(raceType: "7d_mvp" | "24h_sprint" = "7d_mvp"): 
 
         // 8) Si no hay schedule
         if (!scheduleData) {
-          console.warn("⚠️ 24h_sprint: no hay schedule para este slot", { userId, currentSlot, today });
-          setError("no_schedule");
+          console.warn("⚠️ 24h_sprint: no hay schedule válido para este slot", { userId, currentSlot, today });
+          setQuestion(null);
           setWindowState(null);
+          setError("no_schedule");
           setLoading(false);
           executedRef.current = false;
           return;
@@ -194,13 +195,14 @@ export function useDailyQuestion(raceType: "7d_mvp" | "24h_sprint" = "7d_mvp"): 
 
         // 9) Si bank_question_id es null
         if (!scheduleData.bank_question_id) {
-          console.error("❌ Schedule 24h_sprint encontrado pero bank_question_id es NULL", {
+          console.warn("⚠️ 24h_sprint: no hay schedule válido para este slot (bank_question_id es NULL)", {
             scheduleId: scheduleData.id,
             userId,
             slotNumber: currentSlot,
           });
-          setError("no_schedule");
+          setQuestion(null);
           setWindowState(null);
+          setError("no_schedule");
           setLoading(false);
           executedRef.current = false;
           return;
@@ -215,15 +217,19 @@ export function useDailyQuestion(raceType: "7d_mvp" | "24h_sprint" = "7d_mvp"): 
 
         // 11) Si hay error obteniendo la pregunta
         if (questionError) {
-          console.error("❌ 24h_sprint: error al leer pregunta de banco", {
-            message: questionError.message,
-            details: questionError.details,
-            hint: questionError.hint,
-            code: questionError.code,
+          console.error("❌ 24h_sprint: error o pregunta no encontrada en r4w_question_bank", {
             bank_question_id: scheduleData.bank_question_id,
+            bankError: {
+              message: questionError.message,
+              details: questionError.details,
+              hint: questionError.hint,
+              code: questionError.code,
+            },
+            bankData: null,
           });
-          setError("error_carga");
+          setQuestion(null);
           setWindowState(null);
+          setError("error_carga");
           setLoading(false);
           executedRef.current = false;
           return;
@@ -231,28 +237,34 @@ export function useDailyQuestion(raceType: "7d_mvp" | "24h_sprint" = "7d_mvp"): 
 
         // 12) Si no hay pregunta
         if (!questionData) {
-          console.error("❌ No se encontró pregunta en r4w_question_bank con id:", scheduleData.bank_question_id);
-          setError("error_carga");
+          console.error("❌ 24h_sprint: error o pregunta no encontrada en r4w_question_bank", {
+            bank_question_id: scheduleData.bank_question_id,
+            bankError: questionError,
+            bankData: questionData,
+          });
+          setQuestion(null);
           setWindowState(null);
+          setError("error_carga");
           setLoading(false);
           executedRef.current = false;
           return;
         }
 
-        // 13) Construir objeto question
+        // 13) Construir objeto question normalizado
         const windowStart = scheduleData.window_start as string;
         const windowEnd = scheduleData.window_end as string;
 
+        // Verificar estado de ventana ANTES de construir la pregunta
         const state = getWindowState(currentTime, windowStart, windowEnd);
-        setWindowState(state);
-        setWindowInfo({
-          start: windowStart,
-          end: windowEnd,
-          currentTime: currentTime,
-        });
-
+        
         if (state === "before") {
           setError("before_window");
+          setWindowState("before");
+          setWindowInfo({
+            start: windowStart,
+            end: windowEnd,
+            currentTime: currentTime,
+          });
           setLoading(false);
           executedRef.current = false;
           return;
@@ -260,6 +272,12 @@ export function useDailyQuestion(raceType: "7d_mvp" | "24h_sprint" = "7d_mvp"): 
 
         if (state === "after") {
           setError("after_window");
+          setWindowState("after");
+          setWindowInfo({
+            start: windowStart,
+            end: windowEnd,
+            currentTime: currentTime,
+          });
           setLoading(false);
           executedRef.current = false;
           return;
@@ -268,7 +286,8 @@ export function useDailyQuestion(raceType: "7d_mvp" | "24h_sprint" = "7d_mvp"): 
         // Construir opciones como array de strings
         const optionsArray = [questionData.option_a, questionData.option_b, questionData.option_c];
 
-        setQuestion({
+        // Construir objeto normalizado
+        const normalizedQuestion: DailyQuestion = {
           questionId: questionData.id,
           scheduleId: scheduleData.id as number,
           question: questionData.question_text,
@@ -277,11 +296,21 @@ export function useDailyQuestion(raceType: "7d_mvp" | "24h_sprint" = "7d_mvp"): 
           windowStart: windowStart,
           windowEnd: windowEnd,
           correctOption: questionData.correct_option,
+        };
+
+        // Establecer estados en el orden correcto
+        setQuestion(normalizedQuestion);
+        setWindowState("active");
+        setWindowInfo({
+          start: windowStart,
+          end: windowEnd,
+          currentTime: currentTime,
         });
         setError(null);
-        setWindowState("active");
         setLoading(false);
         executedRef.current = false;
+        
+        console.log("✅ 24h_sprint: pregunta normalizada lista", normalizedQuestion);
         return;
       }
 

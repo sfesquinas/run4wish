@@ -256,7 +256,13 @@ export default function Pregunta24hPage() {
   }
 
   // Log para depuración
-  console.log("🧩 pregunta-24h state", { loading: questionLoading, windowState, error: questionError, question: dailyQuestion });
+  console.log("🧩 pregunta-24h state", {
+    questionLoading,
+    windowState,
+    error: questionError,
+    hasQuestion: !!dailyQuestion,
+    questionText: dailyQuestion?.question,
+  });
 
   // Estados de carga - SOLO cuando loading es true
   if (questionLoading || checkingAnswer) {
@@ -276,7 +282,7 @@ export default function Pregunta24hPage() {
   // Manejo explícito de estados de error cuando NO está cargando
   if (!questionLoading) {
     // Error: no hay schedule
-    if (questionError === "no_schedule") {
+    if (windowState === null && questionError === "no_schedule") {
       return (
         <main className="r4w-question-page">
           <section className="r4w-question-layout">
@@ -284,7 +290,7 @@ export default function Pregunta24hPage() {
               <div className="r4w-question-status">Sin pregunta disponible</div>
               <h1 className="r4w-question-title">Sin pregunta disponible</h1>
               <p className="r4w-question-subtitle">
-                Hoy no hay ninguna pregunta programada para este tramo horario.
+                Hoy no hay pregunta programada para este tramo horario.
               </p>
               <Link href="/panel" className="r4w-primary-btn" style={{ marginTop: 16 }}>
                 Volver a mi panel
@@ -297,7 +303,7 @@ export default function Pregunta24hPage() {
     }
 
     // Error: error de carga o error de pregunta
-    if (questionError === "error_carga") {
+    if ((windowState === null && questionError === "error_carga") || questionError === "error_carga") {
       return (
         <main className="r4w-question-page">
           <section className="r4w-question-layout">
@@ -305,7 +311,7 @@ export default function Pregunta24hPage() {
               <div className="r4w-question-status">Error cargando tu pregunta</div>
               <h1 className="r4w-question-title">Error cargando tu pregunta</h1>
               <p className="r4w-question-subtitle">
-                Ha habido un problema al cargar la pregunta de la carrera 24h. Por favor, vuelve a intentarlo más tarde.
+                Ha habido un problema al preparar tu pregunta. Inténtalo de nuevo más tarde.
               </p>
               <Link href="/panel" className="r4w-primary-btn" style={{ marginTop: 16 }}>
                 Volver a mi panel
@@ -360,11 +366,14 @@ export default function Pregunta24hPage() {
     );
   }
 
-  // Solo mostrar la pregunta cuando está activa y cargada
-  if (!questionLoading && windowState === "active" && dailyQuestion && questionText) {
-    // Continuar con el renderizado de la pregunta (código más abajo)
-  } else if (!questionLoading) {
-    // Si no está cargando pero no hay pregunta válida o no está en estado activo
+  // Guardia: verificar que tenemos pregunta válida antes de renderizar
+  if (!questionLoading && (!dailyQuestion || !dailyQuestion.question || windowState !== "active")) {
+    console.warn("⚠️ pregunta-24h: estado incoherente, mostrando mensaje genérico", {
+      windowState,
+      error: questionError,
+      dailyQuestion,
+      hasQuestionText: !!dailyQuestion?.question,
+    });
     return (
       <main className="r4w-question-page">
         <section className="r4w-question-layout">
@@ -372,7 +381,7 @@ export default function Pregunta24hPage() {
             <div className="r4w-question-status">Sin pregunta disponible</div>
             <h1 className="r4w-question-title">No hay pregunta disponible</h1>
             <p className="r4w-question-subtitle">
-              No se pudo cargar la pregunta para este tramo. Intenta recargar la página.
+              No hemos podido mostrar tu pregunta en este momento.
             </p>
             <Link href="/panel" className="r4w-primary-btn" style={{ marginTop: 16 }}>
               Volver a mi panel

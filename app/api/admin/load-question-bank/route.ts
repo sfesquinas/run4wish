@@ -781,10 +781,11 @@ export async function POST(request: NextRequest) {
       // En producción, verificar autenticación
       const auth = await verifyAdminAuth(request);
       if (!auth.ok) {
-        const statusCode = auth.error === "not_authenticated" ? 401 : 403;
+        const errorStatus = "error" in auth && auth.error === "not_authenticated" ? 401 : 403;
+        const errorMessage = "error" in auth ? auth.error : "not_authenticated";
         return NextResponse.json(
-          { success: false, error: auth.error || "not_authenticated" },
-          { status: statusCode }
+          { success: false, error: errorMessage },
+          { status: errorStatus }
         );
       }
     } else {
