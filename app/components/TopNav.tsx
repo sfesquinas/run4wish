@@ -154,7 +154,7 @@ export default function TopNav() {
                   if (logout) {
                     await logout();
                   }
-                  router.push("/");
+                  router.push("/login");
                 }}
               >
                 <span className="r4w-menu-icon">🚪</span>
