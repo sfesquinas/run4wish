@@ -73,8 +73,8 @@ export default function LoginPage() {
           setWishes(() => wishesFromProfile);
       }
 
-      // 3) Redirigir al panel
-      router.push("/panel");
+      // 3) Redirigir a la pantalla principal
+      router.push("/");
     } catch (err: any) {
       console.error(err);
       setErrorMsg("Ha ocurrido un error inesperado.");
