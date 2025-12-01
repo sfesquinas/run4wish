@@ -5,6 +5,7 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useUser } from "../hooks/useUser";
+import { supabase } from "../lib/supabaseClient";
 
 const initialAvatars = [
   { id: "a1", emoji: "🏃‍♀️", unlocked: true },
@@ -26,10 +27,10 @@ type StoredProfile = {
 };
 
 export default function PerfilPage() {
-  const { user, isReady } = useUser();
+  const { user, profile, isReady, refreshProfile } = useUser();
   const router = useRouter();
 
-  const [username, setUsername] = useState("Runner_You");
+  const [username, setUsername] = useState(profile?.username || "Usuario");
   const [country, setCountry] = useState("España");
   const [soundOn, setSoundOn] = useState(true);
   const [vibrationOn, setVibrationOn] = useState(true);
@@ -37,32 +38,27 @@ export default function PerfilPage() {
   const [saving, setSaving] = useState(false);
   const [profileNotice, setProfileNotice] = useState<string | null>(null);
 
-  // Cargar datos del perfil guardado o, si no hay, datos del usuario
+  // Cargar datos del perfil desde Supabase
   useEffect(() => {
-    if (!isReady) return;
-    if (typeof window === "undefined") return;
+    if (!isReady || !profile) return;
 
-    try {
-      const raw = window.localStorage.getItem("r4w_profile");
-      if (raw) {
-        const p = JSON.parse(raw) as Partial<StoredProfile>;
-        if (p.username) setUsername(p.username);
-        if (p.country) setCountry(p.country);
-        if (typeof p.soundOn === "boolean") setSoundOn(p.soundOn);
-        if (typeof p.vibrationOn === "boolean") setVibrationOn(p.vibrationOn);
-        if (p.avatarId) setSelectedAvatar(p.avatarId);
-        return;
+    if (profile.username) setUsername(profile.username);
+    
+    // Cargar preferencias desde localStorage (sonido, vibración, avatar)
+    if (typeof window !== "undefined") {
+      try {
+        const raw = window.localStorage.getItem("r4w_profile");
+        if (raw) {
+          const p = JSON.parse(raw) as Partial<StoredProfile>;
+          if (typeof p.soundOn === "boolean") setSoundOn(p.soundOn);
+          if (typeof p.vibrationOn === "boolean") setVibrationOn(p.vibrationOn);
+          if (p.avatarId) setSelectedAvatar(p.avatarId);
+        }
+      } catch {
+        // silencioso
       }
-
-      // Si no había perfil guardado, usamos algunos datos del user
-      if (user?.country) setCountry(user.country);
-      if ((user as any).avatarId) {
-        setSelectedAvatar((user as any).avatarId as string);
-      }
-    } catch {
-      // silencioso
     }
-  }, [isReady, user]);
+  }, [isReady, profile]);
 
   const handleShare = () => {
     alert(
@@ -70,29 +66,51 @@ export default function PerfilPage() {
     );
   };
 
-  const handleSave = () => {
-    if (typeof window === "undefined") return;
+  const handleSave = async () => {
+    if (!user?.id) return;
 
     setSaving(true);
     try {
-      const profileToStore: StoredProfile = {
-        username,
-        country,
-        soundOn,
-        vibrationOn,
-        avatarId: selectedAvatar,
-      };
+      // 1) Actualizar username en Supabase
+      const { error: updateError } = await supabase
+        .from("r4w_profiles")
+        .update({ username })
+        .eq("id", user.id);
 
-      window.localStorage.setItem(
-        "r4w_profile",
-        JSON.stringify(profileToStore)
-      );
+      if (updateError) {
+        console.error("Error actualizando perfil:", updateError);
+        setProfileNotice("Error al guardar el nombre de usuario");
+        setTimeout(() => setProfileNotice(null), 2000);
+        return;
+      }
+
+      // 2) Guardar preferencias locales (sonido, vibración, avatar)
+      if (typeof window !== "undefined") {
+        const profileToStore: StoredProfile = {
+          username,
+          country,
+          soundOn,
+          vibrationOn,
+          avatarId: selectedAvatar,
+        };
+        window.localStorage.setItem(
+          "r4w_profile",
+          JSON.stringify(profileToStore)
+        );
+      }
+
+      // 3) Refrescar el perfil en el hook para actualizar la cabecera
+      await refreshProfile();
 
       setProfileNotice("Perfil actualizado ✔️");
       setTimeout(() => {
         setProfileNotice(null);
         router.push("/panel");
       }, 1500);
+    } catch (err) {
+      console.error("Error guardando perfil:", err);
+      setProfileNotice("Error al guardar el perfil");
+      setTimeout(() => setProfileNotice(null), 2000);
     } finally {
       setSaving(false);
     }
@@ -123,11 +141,9 @@ export default function PerfilPage() {
       <section className="r4w-profile-layout">
         {/* COLUMNA IZQUIERDA: datos básicos + toggles + avatares */}
         <div>
-          <h1 className="r4w-profile-main-title">Tu perfil Run4Wish</h1>
-          <p className="r4w-profile-subtitle">
-            Ajusta tu nombre de usuario, país, sonido y el avatar con el que
-            compites en cada carrera.
-          </p>
+          <h1 className="r4w-profile-main-title">
+            Tu perfil RUN<span className="r4w-profile-4">4</span>WISH
+          </h1>
 
           <div className="r4w-profile-form">
             {/* Nombre usuario (juego) */}
@@ -162,33 +178,31 @@ export default function PerfilPage() {
             </div>
 
             {/* Toggles */}
-            <div className="r4w-toggle-row">
-              <div className="r4w-toggle-label">
-                <span>Sonido</span>
-                <span>
-                  Activar efectos cuando respondes o subes de posición.
-                </span>
-              </div>
+            <div className="r4w-toggle-container">
               <button
                 type="button"
-                className={`r4w-switch ${soundOn ? "on" : ""}`}
+                className={`r4w-toggle-row r4w-toggle-clickable ${soundOn ? "r4w-toggle-active" : ""}`}
                 onClick={() => setSoundOn((v) => !v)}
+                aria-label={soundOn ? "Desactivar sonido" : "Activar sonido"}
               >
-                <div className="r4w-switch-knob" />
+                <div className="r4w-toggle-label">
+                  <span className={`r4w-toggle-icon ${soundOn ? "r4w-toggle-icon-active" : ""}`}>
+                    {soundOn ? "🔊" : "🔇"}
+                  </span>
+                </div>
               </button>
-            </div>
 
-            <div className="r4w-toggle-row">
-              <div className="r4w-toggle-label">
-                <span>Vibración</span>
-                <span>Notificaciones sutiles cuando se abre la pregunta.</span>
-              </div>
               <button
                 type="button"
-                className={`r4w-switch ${vibrationOn ? "on" : ""}`}
+                className={`r4w-toggle-row r4w-toggle-clickable ${vibrationOn ? "r4w-toggle-active" : ""}`}
                 onClick={() => setVibrationOn((v) => !v)}
+                aria-label={vibrationOn ? "Desactivar vibración" : "Activar vibración"}
               >
-                <div className="r4w-switch-knob" />
+                <div className="r4w-toggle-label">
+                  <span className={`r4w-toggle-icon ${vibrationOn ? "r4w-toggle-icon-active" : ""}`}>
+                    {vibrationOn ? "📳" : "🔕"}
+                  </span>
+                </div>
               </button>
             </div>
 
@@ -238,7 +252,7 @@ export default function PerfilPage() {
             {/* Botón guardar */}
             <button
               type="button"
-              className="r4w-primary-btn"
+              className="r4w-primary-btn r4w-profile-save-btn"
               onClick={handleSave}
               disabled={saving}
             >
@@ -250,7 +264,7 @@ export default function PerfilPage() {
         {/* COLUMNA DERECHA: compartir + navegación */}
         <aside>
           <h2 className="r4w-profile-side-title">
-            Comparte Run4Wish con tus amigos
+            Comparte RUN<span className="r4w-profile-4">4</span>WISH con tus amigos
           </h2>
           <p className="r4w-profile-side-text">
             En las próximas versiones, cuando invites a alguien y se registre
@@ -259,7 +273,7 @@ export default function PerfilPage() {
 
           <button
             type="button"
-            className="r4w-primary-btn"
+            className="r4w-primary-btn r4w-profile-share-btn"
             onClick={handleShare}
           >
             Compartir mi link (demo)
@@ -271,13 +285,13 @@ export default function PerfilPage() {
             aquí, sin complicaciones.
           </p>
 
-          <div style={{ marginTop: 16, display: "flex", gap: 8 }}>
-            <Link href="/panel" className="r4w-secondary-btn">
-              Volver a mi panel
+          <div style={{ marginTop: 20, display: "flex", flexDirection: "row", gap: 12, flexWrap: "wrap" }}>
+            <Link href="/panel" className="r4w-secondary-btn" style={{ flex: "1 1 0", minWidth: "120px", justifyContent: "center" }}>
+              Mi panel
               <span>📊</span>
             </Link>
-            <Link href="/carrera/r7" className="r4w-secondary-btn">
-              Ir a la carrera
+            <Link href="/carrera/r7" className="r4w-secondary-btn" style={{ flex: "1 1 0", minWidth: "120px", justifyContent: "center" }}>
+              Ir a carreras
               <span>🏁</span>
             </Link>
           </div>

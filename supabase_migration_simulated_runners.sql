@@ -61,3 +61,6 @@ EXECUTE FUNCTION update_updated_at_column();
 -- SELECT * FROM r4w_simulated_positions LIMIT 0;
 
 
+
+
+

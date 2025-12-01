@@ -30,3 +30,6 @@ WHERE user_id IS NOT NULL;
 -- ORDER BY ordinal_position;
 
 
+
+
+

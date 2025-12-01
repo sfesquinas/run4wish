@@ -1,6 +1,7 @@
 // app/carrera/[id]/page.tsx
 "use client";
 
+import { useState } from "react";
 import Link from "next/link";
 import { useParams } from "next/navigation";
 import { useRaceProgress } from "../../hooks/useRaceProgress";
@@ -59,6 +60,9 @@ export default function CarreraDetallePage() {
 
   // Por ahora, si ya has respondido hoy, bloqueamos la pregunta
   const questionAvailable = !answeredToday;
+
+  // Estado para controlar el modal del recordatorio
+  const [showReminder, setShowReminder] = useState(false);
 
   return (
     <main className="r4w-race-detail-page">
@@ -187,7 +191,17 @@ export default function CarreraDetallePage() {
         {/* COLUMNA DERECHA: ranking mini + mensaje */}
         <section className="r4w-race-detail-side">
           <div className="r4w-ranking-card" style={{ marginBottom: 14 }}>
-            <div className="r4w-ranking-title">Top & movimiento de hoy</div>
+            <div className="r4w-ranking-title-row">
+              <div className="r4w-ranking-title">Top & movimiento de hoy</div>
+              <button
+                type="button"
+                className="r4w-reminder-info-btn"
+                onClick={() => setShowReminder(true)}
+                aria-label="Ver recordatorio"
+              >
+                <span className="r4w-reminder-info-icon"></span>
+              </button>
+            </div>
             <div className="r4w-ranking-list">
               {rankingTop5.map((item) => (
                 <div key={item.position} className="r4w-ranking-item">
@@ -218,20 +232,43 @@ export default function CarreraDetallePage() {
               ))}
             </div>
           </div>
-
-          <div className="r4w-panel-next">
-            <div className="r4w-panel-next-label">recordatorio</div>
-            <div className="r4w-panel-next-main">
-              Tu posición cambia cada vez que alguien responde más rápido que tú
-              o mantiene más constancia. No se trata de un sprint de un día, sino
-              de aparecer toda la carrera.
-            </div>
-            <div className="r4w-panel-next-time">
-              Cuando la pregunta esté activa, aprovéchala cuanto antes.
-            </div>
-          </div>
         </section>
       </div>
+
+      {/* MODAL DE RECORDATORIO */}
+      {showReminder && (
+        <div
+          className="r4w-reminder-overlay"
+          onClick={() => setShowReminder(false)}
+        >
+          <div
+            className="r4w-reminder-modal"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="r4w-reminder-header">
+              <h3 className="r4w-reminder-title">Recordatorio</h3>
+              <button
+                type="button"
+                className="r4w-reminder-close"
+                onClick={() => setShowReminder(false)}
+                aria-label="Cerrar"
+              >
+                ✕
+              </button>
+            </div>
+            <div className="r4w-reminder-content">
+              <p className="r4w-reminder-main">
+                Tu posición cambia cada vez que alguien responde más rápido que tú
+                o mantiene más constancia. No se trata de un sprint de un día, sino
+                de aparecer toda la carrera.
+              </p>
+              <p className="r4w-reminder-time">
+                Cuando la pregunta esté activa, aprovéchala cuanto antes.
+              </p>
+            </div>
+          </div>
+        </div>
+      )}
     </main>
   );
 }

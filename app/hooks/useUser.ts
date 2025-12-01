@@ -23,47 +23,41 @@ export function useUser() {
   // Por compatibilidad con código que ya usa `preregistrations`
   const [preregistrations] = useState<any[]>([]);
 
-  useEffect(() => {
-    let isMounted = true;
+  const fetchUserAndProfile = async () => {
+    setLoading(true);
 
-    const fetchUserAndProfile = async () => {
-      setLoading(true);
+    // 1) Obtener sesión actual
+    const { data: sessionData } = await supabase.auth.getSession();
+    const currentUser = sessionData.session?.user ?? null;
 
-      // 1) Obtener sesión actual
-      const { data: sessionData } = await supabase.auth.getSession();
-      const currentUser = sessionData.session?.user ?? null;
+    setUser(currentUser);
 
-      if (!isMounted) return;
+    if (currentUser?.id) {
+      // 2) Cargar perfil de r4w_profiles
+      const { data: profileData, error: profileError } = await supabase
+        .from("r4w_profiles")
+        .select("*")
+        .eq("id", currentUser.id)
+        .single();
 
-      setUser(currentUser);
-
-      if (currentUser?.id) {
-        // 2) Cargar perfil de r4w_profiles
-        const { data: profileData, error: profileError } = await supabase
-          .from("r4w_profiles")
-          .select("*")
-          .eq("id", currentUser.id)
-          .single();
-
-        if (!isMounted) return;
-
-        if (!profileError && profileData) {
-          setProfile(profileData as R4WProfile);
-          setWishes(profileData.wishes ?? 0);
-        } else {
-          // si no hay perfil aún, lo dejamos en null
-          setProfile(null);
-          setWishes(0);
-        }
+      if (!profileError && profileData) {
+        setProfile(profileData as R4WProfile);
+        setWishes(profileData.wishes ?? 0);
       } else {
+        // si no hay perfil aún, lo dejamos en null
         setProfile(null);
         setWishes(0);
       }
+    } else {
+      setProfile(null);
+      setWishes(0);
+    }
 
-      if (isMounted) {
-        setLoading(false);
-      }
-    };
+    setLoading(false);
+  };
+
+  useEffect(() => {
+    let isMounted = true;
 
     // Carga inicial
     fetchUserAndProfile();
@@ -76,6 +70,12 @@ export function useUser() {
         if (!isMounted) return;
         const currentUser = session?.user ?? null;
         setUser(currentUser);
+        if (currentUser) {
+          fetchUserAndProfile();
+        } else {
+          setProfile(null);
+          setWishes(0);
+        }
       }
     );
 
@@ -84,6 +84,10 @@ export function useUser() {
       subscription.unsubscribe();
     };
   }, []);
+
+  const refreshProfile = async () => {
+    await fetchUserAndProfile();
+  };
 
   const logout = async () => {
     await supabase.auth.signOut();
@@ -95,6 +99,8 @@ export function useUser() {
   return {
     user,
     profile,
+    username: profile?.username ?? null,
+    email: user?.email ?? null,
     wishes,
     setWishes,
     // por compatibilidad con el resto del código
@@ -102,5 +108,6 @@ export function useUser() {
     isReady: !loading,
     loading,
     logout,
+    refreshProfile,
   };
 }
