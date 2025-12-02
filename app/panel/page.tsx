@@ -1,7 +1,7 @@
 // app/panel/page.tsx
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import confetti from "canvas-confetti";
@@ -50,7 +50,7 @@ export default function PanelPage() {
   const [openMessage, setOpenMessage] = useState<MessageKey | null>(null);
   const [localPreregCount, setLocalPreregCount] = useState<number | null>(null);
   const [lastAdvance, setLastAdvance] = useState<LastAdvance>(null);
-  const [regeneratingSchedule, setRegeneratingSchedule] = useState(false);
+  const [isRegenerating, setIsRegenerating] = useState(false);
 
   // Guard: si no hay usuario cuando ya hemos cargado, lo mandamos a /login
   useEffect(() => {
@@ -94,6 +94,52 @@ export default function PanelPage() {
     });
   }, [openMessage]);
 
+  // Handlers (deben estar antes de los returns tempranos)
+  const handleOpenMessage = (key: MessageKey) => setOpenMessage(key);
+  const handleCloseMessage = () => setOpenMessage(null);
+
+  // Handler para regenerar carrera 7d_mvp (solo admin)
+  const handleRegenerate7d = useCallback(async () => {
+    try {
+      setIsRegenerating(true);
+
+      // Llamar al endpoint admin
+      const res = await fetch("/api/admin/regenerate-7d-schedule", {
+        method: "POST",
+      });
+
+      let body: any = null;
+      try {
+        body = await res.json();
+      } catch {
+        body = null;
+      }
+
+      if (!res.ok) {
+        console.error("❌ Error regenerando carrera 7 días (frontend):", {
+          status: res.status,
+          statusText: res.statusText,
+          body,
+        });
+        alert("No se ha podido regenerar tu carrera de 7 días.");
+        return;
+      }
+
+      console.log("✅ Carrera 7 días regenerada correctamente", body);
+      alert("Tu carrera de 7 días se ha regenerado con nuevas preguntas.");
+      // Opcional: refrescar la página o el estado si hace falta
+      // router.refresh?.();
+    } catch (err: any) {
+      console.error("💥 Error inesperado en handleRegenerate7d:", {
+        message: err?.message || String(err),
+        stack: err?.stack,
+      });
+      alert("Se ha producido un error inesperado al regenerar tu carrera.");
+    } finally {
+      setIsRegenerating(false);
+    }
+  }, []);
+
   // 🔢 Número de prerreservas (BBDD → localStorage como backup)
   const preregCount =
     (preregistrations ?? []).length > 0
@@ -130,40 +176,6 @@ export default function PanelPage() {
       </main>
     );
   }
-
-  const handleOpenMessage = (key: MessageKey) => setOpenMessage(key);
-  const handleCloseMessage = () => setOpenMessage(null);
-
-  // Función para regenerar schedule 7d_mvp (solo admin)
-  const handleRegenerateSchedule = async () => {
-    if (regeneratingSchedule) return;
-
-    setRegeneratingSchedule(true);
-    try {
-      const response = await fetch("/api/admin/regenerate-7d-schedule", {
-        method: "POST",
-      });
-
-      const data = await response.json();
-
-      if (!response.ok || !data.ok) {
-        console.error("❌ Error regenerando schedule:", data);
-        alert(`Error regenerando la carrera. ${data.message || "Revisa la consola."}`);
-        return;
-      }
-
-      console.log("✅ Schedule regenerado:", data);
-      alert("Carrera 7 días regenerada. Vuelve a entrar en la pregunta del día.");
-    } catch (error) {
-      console.error("❌ Error en fetch:", error);
-      alert("Error regenerando la carrera. Revisa la consola.");
-    } finally {
-      setRegeneratingSchedule(false);
-    }
-  };
-
-  // Verificar si es admin
-  const isAdmin = user?.email === "sara.fernandez@run4wish.com";
 
   return (
     <>
@@ -247,22 +259,29 @@ export default function PanelPage() {
             </div>
 
             {/* Botón admin para regenerar carrera 7d_mvp */}
-            {isAdmin && (
-              <div style={{ marginTop: 16, marginBottom: 16 }}>
+            {user?.email === "sara.fernandez@run4wish.com" && (
+              <div
+                className="r4w-admin-tools"
+                style={{
+                  marginTop: 24,
+                  padding: 12,
+                  borderRadius: 12,
+                  border: "1px dashed rgba(255,255,255,0.15)",
+                  fontSize: 12,
+                  opacity: 0.8,
+                }}
+              >
+                <p style={{ marginBottom: 8 }}>
+                  Herramientas ADMIN (solo visibles para ti).
+                </p>
                 <button
                   type="button"
-                  onClick={handleRegenerateSchedule}
-                  disabled={regeneratingSchedule}
+                  onClick={handleRegenerate7d}
+                  disabled={isRegenerating}
                   className="r4w-secondary-btn"
-                  style={{
-                    width: "100%",
-                    fontSize: "12px",
-                    padding: "8px 12px",
-                    opacity: regeneratingSchedule ? 0.6 : 1,
-                    cursor: regeneratingSchedule ? "not-allowed" : "pointer",
-                  }}
+                  style={{ fontSize: 12, padding: "6px 12px" }}
                 >
-                  {regeneratingSchedule ? "Regenerando..." : "Regenerar mi carrera 7 días (ADMIN)"}
+                  {isRegenerating ? "Regenerando carrera 7 días..." : "Regenerar mi carrera 7 días (ADMIN)"}
                 </button>
               </div>
             )}

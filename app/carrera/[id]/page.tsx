@@ -179,9 +179,9 @@ export default function CarreraDetallePage() {
                   <span>📈</span>
                 </Link>
 
-                <Link href="/perfil" className="r4w-secondary-btn" style={{ flex: 1 }}>
-                  Ver mi perfil
-                  <span>👤</span>
+                <Link href="/panel" className="r4w-secondary-btn" style={{ flex: 1 }}>
+                  Ver mi panel
+                  <span>📊</span>
                 </Link>
               </div>
             </div>
