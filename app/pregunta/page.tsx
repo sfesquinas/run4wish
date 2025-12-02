@@ -29,7 +29,8 @@ const CORRECT_OPTION_ID = 1;
 export default function PreguntaPage() {
   const { user } = useUser() as any;
 
-  const { wishes, setWishes } = useWishes(user?.id ?? null);
+  // ⚠️ FUENTE DE VERDAD: wishes viene de r4w_profiles.wishes vía useWishes
+  const { wishes, subtractWishes } = useWishes(user?.id ?? null);
   const { answeredToday, markAnsweredToday } = useRaceProgress("r7", 7);
   const { registerCorrectAnswer } = useStreak();
 
@@ -62,7 +63,7 @@ export default function PreguntaPage() {
     }
   };
 
-  const handleOptionClick = (option: Option) => {
+  const handleOptionClick = async (option: Option) => {
     // Si ya respondió bien, no hacemos nada
     if (hasAnsweredCorrectly) return;
 
@@ -78,7 +79,17 @@ export default function PreguntaPage() {
 
     setSelectedOption(option.id);
     setAttempts((a) => a + 1);
-    setWishes((w) => w - 1); // 🔥 siempre consume 1 wish, aciertes o falles
+    
+    // 🔥 Restar wish en Supabase (fuente de verdad)
+    // Esto actualiza r4w_profiles.wishes y sincroniza automáticamente con la cabecera
+    try {
+      await subtractWishes(1);
+      console.log("✅ Wish restado correctamente en Supabase");
+    } catch (error) {
+      console.error("❌ Error al restar wish:", error);
+      setFeedback("Error al procesar tu respuesta. Inténtalo de nuevo.");
+      return; // No continuamos si falla la actualización en BD
+    }
 
     if (option.id === CORRECT_OPTION_ID) {
       setIsCorrect(true);

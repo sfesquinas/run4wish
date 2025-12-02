@@ -48,3 +48,4 @@ WHERE user_id IS NOT NULL;
 -- gracias al DEFAULT 1.
 -- ============================================
 
+

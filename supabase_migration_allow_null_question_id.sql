@@ -51,3 +51,4 @@ WHERE conrelid = 'r4w_ia_daily_schedule'::regclass
 -- - Los schedules existentes de 7d_mvp (siguen usando question_id normalmente)
 -- ============================================
 
+

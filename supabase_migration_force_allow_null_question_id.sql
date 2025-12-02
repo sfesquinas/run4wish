@@ -37,3 +37,4 @@ JOIN information_schema.key_column_usage kcu
 WHERE tc.table_name = 'r4w_ia_daily_schedule'
   AND tc.constraint_name = 'fk_r4w_ia_daily_schedule_question';
 
+

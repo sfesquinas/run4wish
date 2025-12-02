@@ -23,7 +23,8 @@ export default function Pregunta24hPage() {
   const router = useRouter();
   const { user, isReady } = useUser() as any;
 
-  const { wishes, setWishes } = useWishes(user?.id ?? null);
+  // ⚠️ FUENTE DE VERDAD: wishes viene de r4w_profiles.wishes vía useWishes
+  const { wishes, subtractWishes } = useWishes(user?.id ?? null);
   const { registerCorrectAnswer } = useStreak();
 
   const {
@@ -136,8 +137,19 @@ export default function Pregunta24hPage() {
     setIsProcessing(true);
     setSelectedOption(option.id);
     setAttempts((a) => a + 1);
-    setWishes((w) => w - 1);
     setErrorMsg(null);
+
+    // 🔥 Restar wish en Supabase (fuente de verdad)
+    // Esto actualiza r4w_profiles.wishes y sincroniza automáticamente con la cabecera
+    try {
+      await subtractWishes(1);
+      console.log("✅ Wish restado correctamente en Supabase (24h)");
+    } catch (error) {
+      console.error("❌ Error al restar wish:", error);
+      setErrorMsg("Error al procesar tu respuesta. Inténtalo de nuevo.");
+      setIsProcessing(false);
+      return; // No continuamos si falla la actualización en BD
+    }
 
     try {
       if (option.id === correctOptionId) {

@@ -13,47 +13,75 @@ if (!supabaseUrl || !supabaseServiceKey) {
 const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
 /**
+ * Baraja un array usando el algoritmo Fisher-Yates
+ * @param array Array a barajar
+ * @returns Nuevo array barajado
+ */
+function shuffleArray<T>(array: T[]): T[] {
+  const shuffled = [...array];
+  for (let i = shuffled.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
+  }
+  return shuffled;
+}
+
+/**
  * Crea un schedule completo de 7 días para un usuario en la carrera 7d_mvp
  * Cada día tiene slot_number = 1 (una pregunta por día)
+ * Usa preguntas de r4w_question_bank (igual que 24h_sprint)
  * @param userId ID del usuario
  */
 export async function createUserScheduleFor7dMvp(userId: string): Promise<void> {
   try {
     console.log(`📅 Creando schedule de 7 días para usuario ${userId}...`);
 
-    // 1) Obtener o generar preguntas para los 7 días
-    // Primero intentamos obtener preguntas existentes sin asignar
-    const { data: existingQuestions, error: questionsError } = await supabase
-      .from("r4w_ia_questions")
+    // 1) Obtener preguntas del banco r4w_question_bank
+    const { data: questions, error: questionsError } = await supabase
+      .from("r4w_question_bank")
       .select("id")
-      .limit(7);
+      .limit(100); // Obtener más de las necesarias para tener opciones
 
     if (questionsError) {
-      console.error("Error obteniendo preguntas:", questionsError);
-      throw new Error(`Error obteniendo preguntas: ${questionsError.message}`);
+      console.error("❌ Error obteniendo preguntas del banco:", {
+        message: questionsError.message,
+        details: questionsError.details,
+        hint: questionsError.hint,
+        code: questionsError.code,
+      });
+      throw new Error(`Error obteniendo preguntas del banco: ${questionsError.message}`);
     }
 
-    if (!existingQuestions || existingQuestions.length < 7) {
-      console.warn(`⚠️ Solo hay ${existingQuestions?.length || 0} preguntas disponibles. Se necesitan 7.`);
-      // En producción, aquí podrías llamar al endpoint de generar preguntas
-      // Por ahora, lanzamos un error
-      throw new Error("No hay suficientes preguntas disponibles. Ejecuta /api/admin/generate-questions primero.");
+    if (!questions || questions.length < 7) {
+      console.error(`❌ No hay suficientes preguntas en r4w_question_bank. Se necesitan al menos 7, hay ${questions?.length || 0}`);
+      throw new Error(`No hay suficientes preguntas en el banco. Se necesitan al menos 7, hay ${questions?.length || 0}`);
     }
 
-    // 2) Calcular la fecha de inicio (hoy es el día 1)
+    // 2) Seleccionar 7 preguntas distintas de forma aleatoria
+    const shuffledQuestions = shuffleArray(questions);
+    const selectedQuestions = shuffledQuestions.slice(0, 7);
+
+    console.log("🧩 Creando schedule 7d_mvp desde r4w_question_bank", {
+      userId,
+      questionIds: selectedQuestions.map(q => q.id),
+      totalQuestionsAvailable: questions.length,
+    });
+
+    // 3) Calcular la fecha de inicio (hoy es el día 1)
     const today = new Date();
     const todayStr = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, "0")}-${String(today.getDate()).padStart(2, "0")}`;
 
-    // 3) Crear los 7 schedules (uno para cada día)
+    // 4) Crear los 7 schedules (uno para cada día)
+    // IMPORTANTE: Para 7d_mvp ahora usamos bank_question_id (FK a r4w_question_bank)
+    // Dejamos question_id en NULL (compatibilidad con estructura existente)
     const schedules = [];
     for (let day = 1; day <= 7; day++) {
       const runDate = new Date(today);
       runDate.setDate(today.getDate() + (day - 1));
       const runDateStr = `${runDate.getFullYear()}-${String(runDate.getMonth() + 1).padStart(2, "0")}-${String(runDate.getDate()).padStart(2, "0")}`;
 
-      // Usar una pregunta diferente para cada día (rotación)
-      const questionIndex = (day - 1) % existingQuestions.length;
-      const questionId = existingQuestions[questionIndex].id;
+      // Cada día usa una pregunta distinta del banco (sin repetir)
+      const bankQuestionId = selectedQuestions[day - 1].id;
 
       schedules.push({
         race_type: "7d_mvp",
@@ -62,7 +90,8 @@ export async function createUserScheduleFor7dMvp(userId: string): Promise<void> 
         run_date: runDateStr,
         window_start: "00:00:00",
         window_end: "23:59:59",
-        question_id: questionId,
+        question_id: null, // NULL para 7d_mvp (ahora usamos bank_question_id)
+        bank_question_id: bankQuestionId, // FK a r4w_question_bank
         slot_number: 1, // Para 7d_mvp, siempre slot_number = 1
       });
     }

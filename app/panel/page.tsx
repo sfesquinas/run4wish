@@ -50,6 +50,7 @@ export default function PanelPage() {
   const [openMessage, setOpenMessage] = useState<MessageKey | null>(null);
   const [localPreregCount, setLocalPreregCount] = useState<number | null>(null);
   const [lastAdvance, setLastAdvance] = useState<LastAdvance>(null);
+  const [regeneratingSchedule, setRegeneratingSchedule] = useState(false);
 
   // Guard: si no hay usuario cuando ya hemos cargado, lo mandamos a /login
   useEffect(() => {
@@ -133,6 +134,37 @@ export default function PanelPage() {
   const handleOpenMessage = (key: MessageKey) => setOpenMessage(key);
   const handleCloseMessage = () => setOpenMessage(null);
 
+  // Función para regenerar schedule 7d_mvp (solo admin)
+  const handleRegenerateSchedule = async () => {
+    if (regeneratingSchedule) return;
+
+    setRegeneratingSchedule(true);
+    try {
+      const response = await fetch("/api/admin/regenerate-7d-schedule", {
+        method: "POST",
+      });
+
+      const data = await response.json();
+
+      if (!response.ok || !data.ok) {
+        console.error("❌ Error regenerando schedule:", data);
+        alert(`Error regenerando la carrera. ${data.message || "Revisa la consola."}`);
+        return;
+      }
+
+      console.log("✅ Schedule regenerado:", data);
+      alert("Carrera 7 días regenerada. Vuelve a entrar en la pregunta del día.");
+    } catch (error) {
+      console.error("❌ Error en fetch:", error);
+      alert("Error regenerando la carrera. Revisa la consola.");
+    } finally {
+      setRegeneratingSchedule(false);
+    }
+  };
+
+  // Verificar si es admin
+  const isAdmin = user?.email === "sara.fernandez@run4wish.com";
+
   return (
     <>
       <main className="r4w-panel-page">
@@ -213,6 +245,27 @@ export default function PanelPage() {
                 <div className="r4w-panel-kpi-arrow">➜</div>
               </Link>
             </div>
+
+            {/* Botón admin para regenerar carrera 7d_mvp */}
+            {isAdmin && (
+              <div style={{ marginTop: 16, marginBottom: 16 }}>
+                <button
+                  type="button"
+                  onClick={handleRegenerateSchedule}
+                  disabled={regeneratingSchedule}
+                  className="r4w-secondary-btn"
+                  style={{
+                    width: "100%",
+                    fontSize: "12px",
+                    padding: "8px 12px",
+                    opacity: regeneratingSchedule ? 0.6 : 1,
+                    cursor: regeneratingSchedule ? "not-allowed" : "pointer",
+                  }}
+                >
+                  {regeneratingSchedule ? "Regenerando..." : "Regenerar mi carrera 7 días (ADMIN)"}
+                </button>
+              </div>
+            )}
 
             {/* Wish Meter */}
             <div className="r4w-meter-section">

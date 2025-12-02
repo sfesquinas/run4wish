@@ -55,3 +55,4 @@ WHERE conrelid = 'r4w_ia_daily_schedule'::regclass
 -- - La estructura de otras columnas
 -- ============================================
 
+

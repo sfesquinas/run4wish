@@ -32,6 +32,8 @@ export default function RegistroPage() {
   const [birthdate, setBirthdate] = useState("");
   const [password, setPassword] = useState("");
   const [password2, setPassword2] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
+  const [showPassword2, setShowPassword2] = useState(false);
   const [acceptedPrivacy, setAcceptedPrivacy] = useState(false);
   const [loading, setLoading] = useState(false);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
@@ -176,24 +178,74 @@ export default function RegistroPage() {
 
           <label className="r4w-auth-label">
             Contraseña
-            <input
-              className="r4w-auth-input"
-              type="password"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              minLength={6}
-            />
+            <div style={{ position: "relative" }}>
+              <input
+                className="r4w-auth-input"
+                type={showPassword ? "text" : "password"}
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                minLength={6}
+                style={{ paddingRight: "40px" }}
+              />
+              <button
+                type="button"
+                onClick={() => setShowPassword(!showPassword)}
+                style={{
+                  position: "absolute",
+                  right: "12px",
+                  top: "50%",
+                  transform: "translateY(-50%)",
+                  background: "none",
+                  border: "none",
+                  cursor: "pointer",
+                  fontSize: "18px",
+                  padding: "4px",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  color: "var(--r4w-text-muted)",
+                }}
+                aria-label={showPassword ? "Ocultar contraseña" : "Mostrar contraseña"}
+              >
+                {showPassword ? "👁️" : "👁️‍🗨️"}
+              </button>
+            </div>
           </label>
 
           <label className="r4w-auth-label">
             Repite la contraseña
-            <input
-              className="r4w-auth-input"
-              type="password"
-              value={password2}
-              onChange={(e) => setPassword2(e.target.value)}
-              minLength={6}
-            />
+            <div style={{ position: "relative" }}>
+              <input
+                className="r4w-auth-input"
+                type={showPassword2 ? "text" : "password"}
+                value={password2}
+                onChange={(e) => setPassword2(e.target.value)}
+                minLength={6}
+                style={{ paddingRight: "40px" }}
+              />
+              <button
+                type="button"
+                onClick={() => setShowPassword2(!showPassword2)}
+                style={{
+                  position: "absolute",
+                  right: "12px",
+                  top: "50%",
+                  transform: "translateY(-50%)",
+                  background: "none",
+                  border: "none",
+                  cursor: "pointer",
+                  fontSize: "18px",
+                  padding: "4px",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  color: "var(--r4w-text-muted)",
+                }}
+                aria-label={showPassword2 ? "Ocultar contraseña" : "Mostrar contraseña"}
+              >
+                {showPassword2 ? "👁️" : "👁️‍🗨️"}
+              </button>
+            </div>
           </label>
 
           <label

@@ -249,7 +249,7 @@ export function useDailyQuestion(
     }
 
     /*
-     * LÓGICA PARA 7D MVP (SIMPLIFICADA Y TIPADA COMO ANY)
+     * LÓGICA PARA 7D MVP (ahora usando r4w_question_bank igual que 24h_sprint)
      */
     try {
       if (!userId) {
@@ -259,39 +259,98 @@ export function useDailyQuestion(
         return;
       }
 
-      const { data: schedule, error: schedErr } = await supabase
-        .from("r4w_ia_daily_schedule")
-        .select(
-          `id, day_number, run_date, window_start, window_end, question_id,
-           r4w_ia_questions (id, question, options, correct_option)`
-        )
-        .eq("race_type", raceType)
-        .eq("user_id", userId)
-        .order("run_date", { ascending: true })
-        .limit(1)
-        .maybeSingle();
-
-      if (schedErr || !schedule) {
-        console.warn("No schedule 7d_mvp", schedErr);
+      // Asegurar schedules creados
+      const ok = await ensureUserSchedule(userId, "7d_mvp");
+      if (!ok) {
         setError("no_schedule");
         setLoading(false);
         executedRef.current = false;
         return;
       }
 
-      const scheduleAny: any = schedule as any;
-      const q: any = scheduleAny.r4w_ia_questions;
+      // Buscar schedule del día actual (slot_number = 1 para 7d_mvp)
+      // Necesitamos calcular qué día es hoy basado en el día 1 del schedule
+      const { data: schedules, error: schedulesError } = await supabase
+        .from("r4w_ia_daily_schedule")
+        .select("id, day_number, run_date, window_start, window_end, bank_question_id, question_id")
+        .eq("race_type", raceType)
+        .eq("user_id", userId)
+        .eq("slot_number", 1) // Para 7d_mvp, siempre slot_number = 1
+        .order("day_number", { ascending: true });
 
-      if (!q) {
-        console.warn("Schedule 7d_mvp sin pregunta asociada");
+      if (schedulesError || !schedules || schedules.length === 0) {
+        console.warn("No schedule 7d_mvp encontrado", schedulesError);
+        setError("no_schedule");
+        setLoading(false);
+        executedRef.current = false;
+        return;
+      }
+
+      // Calcular qué día es hoy (basado en run_date del día 1)
+      const firstSchedule = schedules[0];
+      const firstRunDate = firstSchedule.run_date as string;
+      const today = getTodayDate();
+      
+      // Calcular diferencia de días
+      const firstDate = new Date(firstRunDate);
+      const todayDate = new Date(today);
+      const diffTime = todayDate.getTime() - firstDate.getTime();
+      const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
+      
+      // day_number es 1-based, así que diffDays 0 = día 1, diffDays 1 = día 2, etc.
+      const currentDayNumber = Math.min(diffDays + 1, 7); // Máximo día 7
+      
+      // Buscar el schedule del día actual
+      const schedule = schedules.find(s => s.day_number === currentDayNumber);
+      
+      if (!schedule) {
+        console.warn(`No schedule encontrado para día ${currentDayNumber} en 7d_mvp`);
+        setError("no_schedule");
+        setLoading(false);
+        executedRef.current = false;
+        return;
+      }
+
+      // Verificar si tiene bank_question_id (nuevo sistema) o question_id (sistema antiguo)
+      if (!schedule.bank_question_id) {
+        if (schedule.question_id) {
+          console.warn("⚠️ Schedule legacy 7d_mvp con question_id pero sin bank_question_id", {
+            scheduleId: schedule.id,
+            dayNumber: schedule.day_number,
+            questionId: schedule.question_id,
+            userId,
+          });
+          console.warn("Este schedule necesita regenerarse usando el endpoint admin.");
+        } else {
+          console.warn("⚠️ Schedule 7d_mvp sin bank_question_id ni question_id", {
+            scheduleId: schedule.id,
+            dayNumber: schedule.day_number,
+            userId,
+          });
+        }
+        setError("no_schedule");
+        setLoading(false);
+        executedRef.current = false;
+        return;
+      }
+
+      // Obtener pregunta del banco
+      const { data: questionData, error: qError } = await supabase
+        .from("r4w_question_bank")
+        .select("id, question_text, option_a, option_b, option_c, correct_option")
+        .eq("id", schedule.bank_question_id)
+        .maybeSingle();
+
+      if (qError || !questionData) {
+        console.error("Error obteniendo pregunta del banco para 7d_mvp", qError);
         setError("error_carga");
         setLoading(false);
         executedRef.current = false;
         return;
       }
 
-      const windowStart = scheduleAny.window_start as string;
-      const windowEnd = scheduleAny.window_end as string;
+      const windowStart = schedule.window_start as string;
+      const windowEnd = schedule.window_end as string;
 
       const state = getWindowState(currentTime, windowStart, windowEnd);
       setWindowState(state);
@@ -315,28 +374,19 @@ export function useDailyQuestion(
         return;
       }
 
-      let opts: string[] = [];
-      try {
-        if (Array.isArray(q.options)) {
-          opts = q.options as string[];
-        } else if (typeof q.options === "string") {
-          opts = JSON.parse(q.options);
-        }
-      } catch (e) {
-        console.error("Error parseando options 7d_mvp", e);
-        opts = [];
-      }
-
+      // Construir el objeto DailyQuestion desde el banco
       const normalized7d: DailyQuestion = {
-        questionId: q.id,
-        scheduleId: scheduleAny.id as number,
-        question: q.question,
-        options: opts,
-        dayNumber: scheduleAny.day_number,
+        questionId: questionData.id,
+        scheduleId: schedule.id as number,
+        question: questionData.question_text,
+        options: [questionData.option_a, questionData.option_b, questionData.option_c],
+        dayNumber: schedule.day_number,
         windowStart,
         windowEnd,
-        correctOption: q.correct_option
+        correctOption: questionData.correct_option
       };
+
+      console.log("Pregunta 7d_mvp normalizada desde banco", normalized7d);
 
       setQuestion(normalized7d);
       setError(null);
